@@ -19,16 +19,11 @@ main(int argc, char **argv) {
 	grammar *gram = parse_grammar("grammar.g");
 
 	synt_error *e = create_synt_error();
-	synt_tree  *t;
-	int trees     = parser(g, gram, &t, e);
-
-	if(trees == 0) {
-		fprintf(stderr, "Unification failed on line %d, character %d: %s\n", e->row, e->col, e->error);
-		return 1;
-	}
+	synt_tree *t;
+	parser(g, gram, &t, e);
 
 	printf("Syntax tree:\n");
-	show_synt_tree(t);
+	show_synt_tree(t, 0);
 
 	free(t);
 
@@ -41,19 +36,25 @@ main(int argc, char **argv) {
  * Don't forget to free() the returned trees.
  */
 int
-parser(generator *gen, grammar *gram, synt_tree **trees, synt_error *e)
+parser(generator *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 {
-	struct rule *S = &gram->rules[ get_id_for_rule(gram, "S") ];
+	synt_tree *t = malloc(sizeof(synt_tree));
+	*res_tree = t;
+	t->rule = get_id_for_rule(gram, "S");
+	t->type = 1;
+	t->next = NULL;
+	t->fst_child = NULL;
+
+	struct rule *S = &gram->rules[ t->rule ];
 
 	// seed the attempts queue
 	if(S->branches[1] != NULL) {
-		fprintf(stderr, "More than 1 branch in S, this is illegal\n");
+		fprintf(stderr, "More than 1 branch in S, this is not supported\n");
 		return 0;
 	}
 
 	struct attempt *a = malloc(sizeof(struct attempt));
-	*trees      = malloc(sizeof(synt_tree));
-	a->tree     = trees;
+	a->tree     = res_tree;
 	a->branch   = S->branches[0];
 	a->parent   = NULL;
 	a->parentbranch = NULL;
@@ -64,16 +65,29 @@ parser(generator *gen, grammar *gram, synt_tree **trees, synt_error *e)
 	// if att_head becomes 0, all has failed, return syntax error
 	// if an attempt has succeeded parsing all input, return its tree
 	while(att_head != NULL) {
-		if(att_head->parent == NULL && att_head->branch == NULL && generator_eof(gen)) {
-			// we're done here.
-			return 1;
-		}
 		struct attempt *crt = att_head;
 		att_head = crt->next;
 		crt->next = NULL;
 		ruleparser(gen, gram, crt, e);
 	}
 	return 1;
+}
+
+static void
+kill_tree(synt_tree *t, synt_tree **zombies) {
+	if(t->type == 0) {
+		t->next = *zombies;
+		*zombies = t;
+		return;
+	}
+	synt_tree *next, *el = t->fst_child;
+	while(el != NULL) {
+		next = el->next;
+		kill_tree(el, zombies);
+		el = next;
+	}
+	t->next = (void *)0xdeadc0de;
+	free(t);
 }
 
 /**
@@ -84,20 +98,21 @@ parser(generator *gen, grammar *gram, synt_tree **trees, synt_error *e)
 int
 ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 {
-	synt_tree *tree = malloc(sizeof(synt_tree));
-	synt_tree **nextleaf = &tree->fst_child;
-	assert(a->branch != NULL);
+	synt_tree **nextleaf = &(*a->tree)->fst_child;
+	while(*nextleaf != NULL) {
+		nextleaf = &(*nextleaf)->next;
+	}
 
-	do {
+	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
 			struct token *t = generator_shift(gen);
-#ifndef NDEBUG
-			fprintf(stderr, "parser(): > expected literal %s, read %s\n", token_to_string(a->branch->token), token_to_string(t->type));
-#endif
+			printf("Shifted %s\n", token_to_string(t->type));
+			// fprintf(stderr, "parser(): > expected literal %s, read %s\n", token_to_string(a->branch->token), token_to_string(t->type));
 			if(a->branch->token != t->type) {
 				// TODO better error
 				// TODO: unshift generator
 				update_synt_error(e, "Expected literal, read other literal", t->lineno, 0);
+				printf("Unshifted %s\n", token_to_string(t->type));
 				generator_unshift(gen, t);
 				free(a);
 				return 0;
@@ -113,6 +128,11 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 			fprintf(stderr, "parser(): > trying to unify rule %d (%s)\n", a->branch->rule, rule->name);
 #endif
 			for(i = 0; rule->branches[i] != NULL; ++i) {
+				synt_tree *tree = malloc(sizeof(synt_tree));
+				tree->type = 1;
+				tree->next = NULL;
+				tree->fst_child = NULL;
+				*nextleaf = tree;
 				struct attempt *new_attempt = malloc(sizeof(struct attempt));
 				new_attempt->tree     = nextleaf;
 				new_attempt->branch   = rule->branches[i];
@@ -121,22 +141,35 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 				new_attempt->next     = att_head;
 				att_head = new_attempt;
 			}
-			return;
+			return 1;
 		}
 		a->branch = a->branch->next;
-	} while(a->branch != NULL);
+	}
 
 	if(a->branch == NULL) {
-		*a->tree = tree;
+		// XXX we weten niet of *a->tree een tree voor ons is of dat die van attempt 1 was. (Dit is al eerder een probleem.)
+		if(*a->tree != NULL) {
+			// We moeten deze tree opruimen
+			synt_tree *graveyard = NULL, *next;
+			kill_tree(*a->tree, &graveyard);
+			while(graveyard != NULL) {
+				next = graveyard->next;
+				printf("Unshifted %s\n", token_to_string(graveyard->token->type));
+				generator_unshift(gen, graveyard->token);
+				free(graveyard);
+				graveyard = next;
+			}
+		}
 		if(a->parent == NULL) {
 			// Wij zijn S
-			return;
+			return 1;
 		}
 		a->parent->branch = a->parentbranch;
 		a->parent->next = att_head;
 		att_head = a->parent;
 		free(a);
 	}
+	return 0;
 }
 
 /*
@@ -180,8 +213,26 @@ create_synt_error()
 	return e;
 }
 
+static void
+print_indent(int indent) {
+	int i;
+	for(i = 0; indent > i; i++) {
+		printf("  ");
+	}
+}
+
 void
-show_synt_tree(synt_tree *t)
+show_synt_tree(synt_tree *t, int indent)
 {
-	// TODO
+	print_indent(indent);
+	printf("ptr: %p\n", t);
+	if(t->type == 1) {
+		synt_tree *el = t->fst_child;
+		while(el != NULL) {
+			show_synt_tree(el, indent + 1);
+		}
+	} else {
+		print_indent(indent);
+		printf("Token: %s\n", token_to_string(t->token->type));
+	}
 }
