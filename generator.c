@@ -37,6 +37,9 @@ generator_yield(generator *g, void *item) {
 int
 generator_eof(generator *g) {
 	if(g->async == -1) {
+		if(g->ready != NULL) {
+			return 0;
+		}
 		while(g->has_item == 0) {
 			pthread_cond_signal(&g->cond);
 			pthread_cond_wait(&g->cond, &g->lock);
@@ -63,7 +66,7 @@ generator_shift(generator *g) {
 	if(generator_eof(g)) {
 		return NULL;
 	}
-	if(g->async == -1) {
+	if(g->async == -1 && g->ready != NULL) {
 		ret = g->item;
 		g->item = NULL;
 		if(g->has_item == -2) {
@@ -78,6 +81,14 @@ generator_shift(generator *g) {
 		free(container);
 	}
 	return ret;
+}
+
+void
+generator_unshift(generator *g, void *item) {
+	struct generator_item *gi = malloc(sizeof(struct generator_item));
+	gi->item = item;
+	gi->next = g->ready;
+	g->ready = gi;
 }
 
 static void *

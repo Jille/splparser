@@ -14,14 +14,14 @@ struct _generator {
 	void *arg;
 	pthread_mutex_t lock;
 	pthread_cond_t cond;
+	int async;
+	struct generator_item *ready;
 	union {
 		struct {
-			int async;
 			void *item;
 			int has_item;
 		};
 		struct {
-			struct generator_item *ready;
 			struct generator_item *output;
 			struct generator_item **output_last;
 		};
