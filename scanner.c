@@ -216,113 +216,69 @@ done:
 
 static int
 scan_initial_sign(struct scannerstate *st, char in) {
-	char buf[4];
-	char *bufp = buf;
-	*bufp++ = in;
-
-	while(!generator_eof(st->ig)) {
-		if(buf + sizeof(buf) == bufp) {
-			asprintf(&st->error, "Operator '%.*s...' too long.", sizeof(buf), buf);
-			return SCN_ERR;
-		}
-		in = (char)(int)generator_shift(st->ig);
-		switch(in) {
-			case '=':
-			case ';':
-			case ',':
-			case '+':
-			case '-':
-			case '*':
-			case '/':
-			case '%':
-			case ':':
-			case '(':
-			case ')':
-			case '{':
-			case '}':
-			case '[':
-			case ']':
-			case '<':
-			case '>':
-			case '!':
-			case '&':
-			case '|':
-				*bufp++ = in;
-				break;
-			default:
-				goto done;
-		}
-	}
-	in = SCN_EOF;
-
-done:
-	*bufp = 0;
-	switch(buf[1]) {
-		case 0:
-			switch(buf[0]) {
-				case '=':
-				case ';':
-				case ',':
-				case '+':
-				case '-':
-				case '*':
-				case '/':
-				case '%':
-				case ':':
-				case '(':
-				case ')':
-				case '{':
-				case '}':
-				case '[':
-				case ']':
-				case '<':
-				case '>':
-				case '!':
-					st->active->type = buf[0];
-					break;
-				case '&':
-				case '|':
-					goto unknown;
-				default:
-					assert(!"reached");
-			}
-			break;
+	char in2;
+	st->active->type = in;
+	switch(in) {
+		case ';':
+		case ',':
+		case '+':
+		case '-':
+		case '*':
+		case '/':
+		case '%':
+		case ':':
+		case '(':
+		case ')':
+		case '{':
+		case '}':
+		case '[':
+		case ']':
+			return SCN_NUL;
 		case '=':
-			if(buf[2] != 0) {
-				goto unknown;
-			}
-			switch(buf[0]) {
-				case '=':
-					st->active->type = T_EQ;
-					break;
-				case '<':
-					st->active->type = T_LTE;
-					break;
-				case '>':
-					st->active->type = T_GTE;
-					break;
-				case '!':
-					st->active->type = T_NE;
-					break;
-				default:
-					assert(!"reached");
-			}
-			break;
+		case '!':
+		case '<':
+		case '>':
 		case '&':
 		case '|':
-			if(buf[0] != buf[1] || buf[2] != 0) {
-				goto unknown;
-			}
-			if(buf[0] == '&') {
-				st->active->type = T_AND;
+			if(generator_eof(st->ig)) {
+				in2 = SCN_EOF;
 			} else {
-				st->active->type = T_OR;
+				in2 = (char)(int)generator_shift(st->ig);
 			}
-			break;
+			switch(in2) {
+				case '=':
+					switch(in) {
+						case '=':
+							st->active->type = T_EQ;
+							break;
+						case '!':
+							st->active->type = T_NE;
+							break;
+						case '>':
+							st->active->type = T_GTE;
+							break;
+						case '<':
+							st->active->type = T_LTE;
+							break;
+						default:
+							return in2;
+					}
+					return SCN_NUL;
+				case '&':
+				case '|':
+					if(in == in2) {
+						st->active->type = (in == '&') ? T_AND : T_OR;
+						return SCN_NUL;
+					}
+					break;
+				case SCN_EOF:
+				default:
+					if(in2 == '&' || in2 == '|') {
+						break;
+					}
+					return in2;
+			}
 	}
-	return in;
-
-unknown:
-	asprintf(&st->error, "Operator '%s' is unknown.", buf);
+	asprintf(&st->error, "Operator '%c' is unknown.", in);
 	return SCN_ERR;
 }
