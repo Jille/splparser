@@ -32,7 +32,7 @@ echo "	}" >> tokens.h
 echo "	return NULL;" >> tokens.h
 echo "}" >> tokens.h
 echo >> tokens.h
-echo "static int" >> tokens.h
+echo "static char" >> tokens.h
 echo "string_to_token(char *str) {" >> tokens.h
 echo "	if(str[1] == 0) {" >> tokens.h
 echo "		switch(str[0]) {" >> tokens.h
