@@ -62,6 +62,8 @@ parse_branch(char *str) {
 		}
 		tail = &(*tail)->next;
 	} while((part = strtok_r(NULL, " ", &tokenizer)) != NULL);
+
+	*tail = NULL;
 	return head;
 }
 
