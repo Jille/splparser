@@ -12,7 +12,7 @@ struct rulepart {
 	int is_literal;
 	union {
 		int rule;
-		int token;
+		char token;
 	};
 	struct rulepart *next;
 };
