@@ -66,7 +66,7 @@ generator_shift(generator *g) {
 	if(generator_eof(g)) {
 		return NULL;
 	}
-	if(g->async == -1 && g->ready != NULL) {
+	if(g->async == -1 && g->ready == NULL) {
 		ret = g->item;
 		g->item = NULL;
 		if(g->has_item == -2) {
