@@ -1,0 +1,45 @@
+Input: a b
+S := a b
+Output: S(a b)
+
+Input: a b c
+S := a b
+Output: error, expected eof, got c
+
+Input: a
+S := a b
+Output: error, expected b, got eof
+
+Input: a b c
+S := a foo c
+foo := b
+Output: S(a foo(b) c)
+
+Input: a b c d
+S := a foo d
+foo := b | b c
+Output: S(a foo(b c) d)
+
+Input: a b c x d
+S := a foo d
+foo := b c bar | b bar
+bar := e | baz
+baz := e | x
+Output: S(a foo(b c bar(baz(x))) d)
+
+Input: a a a b
+S := a+ b
+a+ := a a+ | a
+Output: S(a+(a a+(a a+(a))) b)
+
+Input: b
+S := a+ b
+a+ := a a+ | a
+Output: error, expected a, got b
+
+Input: a a a
+S := a+ b
+a+ := a a+ | a
+Output: error, expected b, got a
+Output: error, expected a, got eof
+(allebei zijn wel oke)
