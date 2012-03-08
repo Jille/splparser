@@ -1,11 +1,8 @@
 CFLAGS=	-Wall -g
 LDFLAGS=	-lpthread -g
 
-grammar: grammar.c tokens.h Makefile
-	cc -o grammar $(CFLAGS) $(LDFLAGS) grammar.c
-
-parser: parser.o scanner.o input.o generator.o
-	cc -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o
+parser: parser.o scanner.o input.o generator.o grammar.o
+	cc -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o grammar.o
 
 parser.o: parser.c tokens.h Makefile
 	cc -c $(CFLAGS) parser.c
@@ -18,6 +15,9 @@ input.o: input.c Makefile
 
 generator.o: generator.c generator.h Makefile
 	cc -c $(CFLAGS) generator.c
+
+grammar.o: grammar.c grammar.h Makefile
+	cc -c $(CFLAGS) grammar.c
 
 clean:
 	rm -f parser *.o tokens.h

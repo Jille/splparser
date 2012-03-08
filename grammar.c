@@ -113,10 +113,3 @@ show_grammar(grammar *g) {
 		}
 	}
 }
-
-int
-main(int argc, char **argv) {
-	grammar *g = parse_grammar("grammar.g");
-	show_grammar(g);
-	return 0;
-}
