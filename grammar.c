@@ -4,43 +4,26 @@
 #include <stdlib.h>
 #include <err.h>
 #include "tokens.h"
-
-struct rule {
-	int id;
-	char *name;
-	struct rulepart *branches[20];
-};
-
-struct rulepart {
-	int is_literal;
-	union {
-		int rule;
-		int token;
-	};
-	struct rulepart *next;
-};
-
-int lastrule = -1;
-struct rule rules[2000];
+#include "grammar.h"
 
 int
-get_id_for_rule(char *rule) {
+get_id_for_rule(grammar *g, char *rule) {
 	int i;
-	for(i = 0; lastrule >= i; i++) {
-		if(strcmp(rule, rules[i].name) == 0) {
+	for(i = 0; g->lastrule >= i; i++) {
+		if(strcmp(rule, g->rules[i].name) == 0) {
 			return i;
 		}
 	}
-	lastrule++;
-	memset(&rules[lastrule], 0, sizeof(struct rule));
-	rules[lastrule].id = lastrule;
-	rules[lastrule].name = strdup(rule);
-	printf("Creating rule %d for %s\n", lastrule, rule);
-	return lastrule;
+	g->lastrule++;
+	memset(&g->rules[g->lastrule], 0, sizeof(struct rule));
+	g->rules[g->lastrule].id = g->lastrule;
+	g->rules[g->lastrule].name = strdup(rule);
+	printf("Creating rule %d for %s\n", g->lastrule, rule);
+	return g->lastrule;
 }
 
 struct rulepart *
-parse_branch(char *str) {
+parse_branch(grammar *g, char *str) {
 	char *part, *tokenizer;
 	struct rulepart *head;
 	struct rulepart **tail = &head;
@@ -58,7 +41,7 @@ parse_branch(char *str) {
 			(*tail)->is_literal = 1;
 		} else {
 			(*tail)->is_literal = 0;
-			(*tail)->rule = get_id_for_rule(part);
+			(*tail)->rule = get_id_for_rule(g, part);
 		}
 		tail = &(*tail)->next;
 	} while((part = strtok_r(NULL, " ", &tokenizer)) != NULL);
@@ -67,10 +50,12 @@ parse_branch(char *str) {
 	return head;
 }
 
-void
+grammar *
 parse_grammar(char *file) {
 	FILE *fh = fopen(file, "r");
 	char buf[256];
+	grammar *g = malloc(sizeof(grammar));
+	g->lastrule = -1;
 	while(!feof(fh)) {
 		char *def;
 		if(fgets(buf, sizeof(buf), fh) == NULL) {
@@ -86,7 +71,7 @@ parse_grammar(char *file) {
 		def[strlen(def) - 1] = 0;
 		printf("'%s': '%s'\n", buf, def);
 
-		struct rule *rule = &rules[get_id_for_rule(buf)];
+		struct rule *rule = &g->rules[get_id_for_rule(g, buf)];
 		int branchno = 0;
 		char *nextbranch = def;
 		do {
@@ -96,31 +81,32 @@ parse_grammar(char *file) {
 				*nextbranch = 0;
 				nextbranch += 3;
 			}
-			rule->branches[branchno++] = parse_branch(branch);
+			rule->branches[branchno++] = parse_branch(g, branch);
 		} while(nextbranch != NULL);
 		printf("Found %d branches for rule %s\n", branchno, rule->name);
 	}
 	fclose(fh);
+	return g;
 }
 
 void
-show_grammar() {
+show_grammar(grammar *g) {
 	int i;
-	for(i = 0; lastrule >= i; i++) {
-		if(rules[i].branches[0] == NULL) {
-			printf("Rule %s (#%d) not defined\n", rules[i].name, i);
+	for(i = 0; g->lastrule >= i; i++) {
+		if(g->rules[i].branches[0] == NULL) {
+			printf("Rule %s (#%d) not defined\n", g->rules[i].name, i);
 			continue;
 		}
-		printf("Rule %s :=\n", rules[i].name);
+		printf("Rule %s :=\n", g->rules[i].name);
 		int b;
-		for(b = 0; rules[i].branches[b] != NULL; b++) {
-			struct rulepart *p = rules[i].branches[b];
+		for(b = 0; g->rules[i].branches[b] != NULL; b++) {
+			struct rulepart *p = g->rules[i].branches[b];
 			printf("\t");
 			do {
 				if(p->is_literal) {
 					printf("%s ", token_to_string(p->token));
 				} else {
-					printf("%s ", rules[p->rule].name);
+					printf("%s ", g->rules[p->rule].name);
 				}
 			} while((p = p->next) != NULL);
 			printf("\n");
@@ -130,7 +116,7 @@ show_grammar() {
 
 int
 main(int argc, char **argv) {
-	parse_grammar("grammar.g");
-	show_grammar();
+	grammar *g = parse_grammar("grammar.g");
+	show_grammar(g);
 	return 0;
 }
