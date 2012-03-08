@@ -54,7 +54,7 @@ parse_branch(grammar *g, char *str) {
 grammar *
 parse_grammar(char *file) {
 	FILE *fh = fopen(file, "r");
-	char buf[256];
+	char buf[1024];
 	grammar *g = malloc(sizeof(grammar));
 	g->lastrule = -1;
 	while(!feof(fh)) {
@@ -64,6 +64,9 @@ parse_grammar(char *file) {
 				break;
 			}
 			err(1, "fgets");
+		}
+		if(buf[0] == '#') {
+			continue;
 		}
 		def = strstr(buf, " := ");
 		assert(def != NULL);
