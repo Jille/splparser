@@ -15,6 +15,7 @@ get_id_for_rule(grammar *g, char *rule) {
 		}
 	}
 	g->lastrule++;
+	assert(g->lastrule < sizeof(g->rules) / sizeof(struct rule));
 	memset(&g->rules[g->lastrule], 0, sizeof(struct rule));
 	g->rules[g->lastrule].id = g->lastrule;
 	g->rules[g->lastrule].name = strdup(rule);
@@ -82,6 +83,7 @@ parse_grammar(char *file) {
 				nextbranch += 3;
 			}
 			rule->branches[branchno++] = parse_branch(g, branch);
+			assert(branchno < (sizeof(rule->branches) / sizeof(struct rulepart *)));
 		} while(nextbranch != NULL);
 		printf("Found %d branches for rule %s\n", branchno, rule->name);
 	}
