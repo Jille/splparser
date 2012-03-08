@@ -31,5 +31,6 @@ struct _generator {
 void generator_yield(generator *g, void *item);
 int generator_eof(generator *g);
 void *generator_shift(generator *g);
+void generator_unshift(generator *g, void *item);
 generator *generator_create(genfunc f, void *arg, int async);
 void generator_destroy(generator *g);
