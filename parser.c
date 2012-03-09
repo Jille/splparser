@@ -124,6 +124,8 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 		}
 		*a->tree = NULL;
 	}
+	printf("[%p] Upcoming input: \n", a);
+	peek_upcoming_input(gen, 10);
 
 	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
@@ -257,5 +259,28 @@ show_synt_tree(synt_tree *t, int indent)
 	} else {
 		print_indent(indent);
 		printf("Token: %s\n", token_to_string(t->token->type));
+	}
+}
+
+void
+peek_upcoming_input(generator *g, int num) {
+	struct token *buf[num];
+	int i;
+	for(i = 0; num > i && !generator_eof(g); i++) {
+		buf[i] = generator_shift(g);
+		printf("Token: %s", token_to_string(buf[i]->type));
+		switch(buf[i]->type) {
+			case T_WORD:
+				printf("('%s')\n", buf[i]->value.sval);
+				break;
+			case T_NUMBER:
+				printf("(%d)\n", buf[i]->value.ival);
+				break;
+			default:
+				printf("\n");
+		}
+	}
+	for(i = i-1; 0 <= i; i--) {
+		generator_unshift(g, buf[i]);
 	}
 }
