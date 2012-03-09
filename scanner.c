@@ -19,10 +19,10 @@
 #define SCN_CASE_ALPHA SCN_CASE_LOWER: case SCN_CASE_UPPER
 #define SCN_CASE_ALPHANUM SCN_CASE_ALPHA: case SCN_CASE_DIGIT
 
-static int scan_initial_int(struct scannerstate *, char);
-static int scan_initial_lower(struct scannerstate *, char);
-static int scan_initial_upper(struct scannerstate *, char);
-static int scan_initial_sign(struct scannerstate *, char);
+static int scan_initial_int(struct scannerstate *, int);
+static int scan_initial_lower(struct scannerstate *, int);
+static int scan_initial_upper(struct scannerstate *, int);
+static int scan_initial_sign(struct scannerstate *, int);
 
 void
 gen_tokens(generator *g, void *arg) {
@@ -34,9 +34,9 @@ gen_tokens(generator *g, void *arg) {
 	st.ig = generator_create(gen_input, arg, 0);
 
 	while(nextchar != SCN_NUL || !generator_eof(st.ig)) {
-		char in;
+		int in;
 		if(nextchar == SCN_NUL) {
-			in = (char)(int)generator_shift(st.ig);
+			in = (int)generator_shift(st.ig);
 		} else {
 			in = nextchar;
 			assert(in >= 0 && in < 256);
@@ -106,11 +106,11 @@ gen_tokens(generator *g, void *arg) {
 }
 
 static int
-scan_initial_int(struct scannerstate *st, char in) {
+scan_initial_int(struct scannerstate *st, int in) {
 	int num = in - '0';
 
 	while(!generator_eof(st->ig)) {
-		in = (char)(int)generator_shift(st->ig);
+		in = (int)generator_shift(st->ig);
 		switch(in) {
 			case SCN_CASE_DIGIT:
 				num *= 10;
@@ -128,7 +128,7 @@ done:
 }
 
 static int
-scan_initial_lower(struct scannerstate *st, char in) {
+scan_initial_lower(struct scannerstate *st, int in) {
 	char buf[128];
 	char *bufp = buf;
 	*bufp++ = in;
@@ -138,7 +138,7 @@ scan_initial_lower(struct scannerstate *st, char in) {
 			asprintf(&st->error, "Word '%.*s...' too long.", sizeof(buf), buf);
 			return SCN_ERR;
 		}
-		in = (char)(int)generator_shift(st->ig);
+		in = (int)generator_shift(st->ig);
 		switch(in) {
 			case SCN_CASE_DIGIT:
 			case SCN_CASE_LOWER:
@@ -171,7 +171,7 @@ done:
 }
 
 static int
-scan_initial_upper(struct scannerstate *st, char in) {
+scan_initial_upper(struct scannerstate *st, int in) {
 	char buf[16];
 	char *bufp = buf;
 	*bufp++ = in;
@@ -181,7 +181,7 @@ scan_initial_upper(struct scannerstate *st, char in) {
 			asprintf(&st->error, "Word '%.*s...' too long.", sizeof(buf), buf);
 			return SCN_ERR;
 		}
-		in = (char)(int)generator_shift(st->ig);
+		in = (int)generator_shift(st->ig);
 		switch(in) {
 			case SCN_CASE_ALPHA:
 				*bufp++ = in;
@@ -215,8 +215,8 @@ done:
 }
 
 static int
-scan_initial_sign(struct scannerstate *st, char in) {
-	char in2;
+scan_initial_sign(struct scannerstate *st, int in) {
+	int in2;
 	st->active->type = in;
 	switch(in) {
 		case ';':
@@ -243,7 +243,7 @@ scan_initial_sign(struct scannerstate *st, char in) {
 			if(generator_eof(st->ig)) {
 				in2 = SCN_EOF;
 			} else {
-				in2 = (char)(int)generator_shift(st->ig);
+				in2 = (int)generator_shift(st->ig);
 			}
 			switch(in2) {
 				case '=':
