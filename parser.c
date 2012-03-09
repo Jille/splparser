@@ -120,6 +120,11 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 
 	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
+			if(generator_eof(gen)) {
+				fprintf(stderr, "Hit EOF while expecting %s\n", token_to_string(a->branch->token));
+				free(a);
+				return 0;
+			}
 			struct token *t = generator_shift(gen);
 			printf("Shifted %s\n", token_to_string(t->type));
 			// fprintf(stderr, "parser(): > expected literal %s, read %s\n", token_to_string(a->branch->token), token_to_string(t->type));
