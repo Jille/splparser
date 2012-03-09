@@ -20,13 +20,13 @@ main(int argc, char **argv) {
 
 	synt_error *e = create_synt_error();
 	synt_tree *t;
-	parser(g, gram, &t, e);
-
+	if(!parser(g, gram, &t, e)) {
+		return 1;
+	}
 	printf("Syntax tree:\n");
 	show_synt_tree(t, 0);
 
 	free(t);
-
 	return 0;
 }
 
@@ -54,7 +54,7 @@ parser(generator *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 	}
 
 	struct attempt *a = malloc(sizeof(struct attempt));
-	a->tree     = res_tree;
+	a->tree     = &t->fst_child;
 	a->branch   = S->branches[0];
 	a->parent   = NULL;
 	a->parentbranch = NULL;
@@ -62,15 +62,20 @@ parser(generator *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 
 	att_head = a;
 
+	printf("[att_queue] Queued %p (S)\n", a);
+
 	// if att_head becomes 0, all has failed, return syntax error
 	// if an attempt has succeeded parsing all input, return its tree
 	while(att_head != NULL) {
 		struct attempt *crt = att_head;
 		att_head = crt->next;
 		crt->next = NULL;
-		ruleparser(gen, gram, crt, e);
+		if(ruleparser(gen, gram, crt, e)) {
+			return 1;
+		}
 	}
-	return 1;
+	printf("No valid parsing found\n");
+	return 0;
 }
 
 static void
@@ -98,9 +103,19 @@ kill_tree(synt_tree *t, synt_tree **zombies) {
 int
 ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 {
-	synt_tree **nextleaf = &(*a->tree)->fst_child;
-	while(*nextleaf != NULL) {
-		nextleaf = &(*nextleaf)->next;
+	printf("[att_queue] Working on %p\n", a);
+	if(*a->tree != NULL) {
+		printf("[%p] Cleaning tree\n", a);
+		// We moeten deze tree opruimen
+		synt_tree *graveyard = NULL, *next;
+		kill_tree(*a->tree, &graveyard);
+		while(graveyard != NULL) {
+			next = graveyard->next;
+			printf("Unshifted %s\n", token_to_string(graveyard->token->type));
+			generator_unshift(gen, graveyard->token);
+			free(graveyard);
+			graveyard = next;
+		}
 	}
 
 	while(a->branch != NULL) {
@@ -117,56 +132,51 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 				free(a);
 				return 0;
 			}
-			*nextleaf = malloc(sizeof(synt_tree));
-			(*nextleaf)->type = 0;
-			(*nextleaf)->token = t;
-			nextleaf = &(*nextleaf)->next;
+			*a->tree = malloc(sizeof(synt_tree));
+			(*a->tree)->type = 0;
+			(*a->tree)->token = t;
+			(*a->tree)->next = NULL;
+			a->tree = &(*a->tree)->next;
 		} else {
 			struct rule *rule = &gram->rules[a->branch->rule];
 			int i;
 #ifndef NDEBUG
 			fprintf(stderr, "parser(): > trying to unify rule %d (%s)\n", a->branch->rule, rule->name);
 #endif
+			synt_tree *tree = malloc(sizeof(synt_tree));
+			tree->type = 1;
+			tree->next = NULL;
+			tree->fst_child = NULL;
+			*a->tree = tree;
+			a->tree = &(*a->tree)->next;
 			for(i = 0; rule->branches[i] != NULL; ++i) {
-				synt_tree *tree = malloc(sizeof(synt_tree));
-				tree->type = 1;
-				tree->next = NULL;
-				tree->fst_child = NULL;
-				*nextleaf = tree;
 				struct attempt *new_attempt = malloc(sizeof(struct attempt));
-				new_attempt->tree     = nextleaf;
+				new_attempt->tree     = &tree->fst_child;
 				new_attempt->branch   = rule->branches[i];
 				new_attempt->parent   = a;
-				new_attempt->parentbranch = a->branch;
+				new_attempt->parentbranch = a->branch->next;
 				new_attempt->next     = att_head;
 				att_head = new_attempt;
+				printf("[%p] Queued %p (%s)\n", a, new_attempt, rule->name);
 			}
-			return 1;
+			a->branch = NULL;
+			return 0;
 		}
 		a->branch = a->branch->next;
 	}
 
+	printf("[%p] Completed\n", a);
+
 	if(a->branch == NULL) {
-		// XXX we weten niet of *a->tree een tree voor ons is of dat die van attempt 1 was. (Dit is al eerder een probleem.)
-		if(*a->tree != NULL) {
-			// We moeten deze tree opruimen
-			synt_tree *graveyard = NULL, *next;
-			kill_tree(*a->tree, &graveyard);
-			while(graveyard != NULL) {
-				next = graveyard->next;
-				printf("Unshifted %s\n", token_to_string(graveyard->token->type));
-				generator_unshift(gen, graveyard->token);
-				free(graveyard);
-				graveyard = next;
-			}
-		}
 		if(a->parent == NULL) {
 			// Wij zijn S
+			printf("Great success\n");
 			return 1;
 		}
 		a->parent->branch = a->parentbranch;
 		a->parent->next = att_head;
 		att_head = a->parent;
+		printf("[%p] Requeuing parent %p\n", a, a->parent);
 		free(a);
 	}
 	return 0;
@@ -225,11 +235,12 @@ void
 show_synt_tree(synt_tree *t, int indent)
 {
 	print_indent(indent);
-	printf("ptr: %p\n", t);
+	printf("ptr: %p (type %d)\n", t, t->type);
 	if(t->type == 1) {
 		synt_tree *el = t->fst_child;
 		while(el != NULL) {
 			show_synt_tree(el, indent + 1);
+			el = el->next;
 		}
 	} else {
 		print_indent(indent);
