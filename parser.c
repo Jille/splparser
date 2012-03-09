@@ -116,13 +116,13 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 			free(graveyard);
 			graveyard = next;
 		}
+		*a->tree = NULL;
 	}
 
 	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
 			if(generator_eof(gen)) {
 				fprintf(stderr, "Hit EOF while expecting %s\n", token_to_string(a->branch->token));
-				free(a);
 				return 0;
 			}
 			struct token *t = generator_shift(gen);
@@ -134,7 +134,6 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 				update_synt_error(e, "Expected literal, read other literal", t->lineno, 0);
 				printf("Unshifted %s\n", token_to_string(t->type));
 				generator_unshift(gen, t);
-				free(a);
 				return 0;
 			}
 			*a->tree = malloc(sizeof(synt_tree));
