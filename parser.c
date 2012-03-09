@@ -109,7 +109,12 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 		printf("[%p] Cleaning tree\n", a);
 		// We moeten deze tree opruimen
 		synt_tree *graveyard = NULL, *next;
-		kill_tree(*a->tree, &graveyard);
+		do {
+			next = (*a->tree)->next;
+			show_synt_tree(*a->tree, 2);
+			kill_tree(*a->tree, &graveyard);
+			*a->tree = next;
+		} while(*a->tree != NULL);
 		while(graveyard != NULL) {
 			next = graveyard->next;
 			printf("Unshifted %s\n", token_to_string(graveyard->token->type));
