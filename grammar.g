@@ -1,6 +1,6 @@
 S := Decl+
 Decl := VarDecl | FunDecl
-VarDecl := Type T_WORD '=' Exp
+VarDecl := Type T_WORD '=' Exp ';'
 FunDecl := RetType T_WORD '(' FArgs ')' '{' Stmt+ '}' | RetType T_WORD '(' ')' '{' Stmt+ '}' | RetType T_WORD '(' FArgs ')' '{' VarDecl+ Stmt+ '}' | RetType T_WORD '(' ')' '{' VarDecl+ Stmt+ '}'
 RetType := Type | T_VOID
 Type := T_INT | T_BOOL | '(' Type ',' Type ')' | '[' Type ']' | T_WORD
