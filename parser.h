@@ -24,6 +24,7 @@ struct attempt {
 	struct rulepart *branch;
 	struct attempt *parent;
 	struct rulepart *parentbranch;
+	synt_tree **parenttree;
 	struct attempt *next;
 };
 

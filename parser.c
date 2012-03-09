@@ -58,6 +58,7 @@ parser(generator *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 	a->branch   = S->branches[0];
 	a->parent   = NULL;
 	a->parentbranch = NULL;
+	a->parenttree = NULL;
 	a->next     = NULL;
 
 	att_head = a;
@@ -159,6 +160,7 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 				new_attempt->branch   = rule->branches[i];
 				new_attempt->parent   = a;
 				new_attempt->parentbranch = a->branch->next;
+				new_attempt->parenttree = a->tree;
 				new_attempt->next     = att_head;
 				att_head = new_attempt;
 				printf("[%p] Queued %p (%s)\n", a, new_attempt, rule->name);
@@ -178,6 +180,7 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 			return 1;
 		}
 		a->parent->branch = a->parentbranch;
+		a->parent->tree = a->parenttree;
 		a->parent->next = att_head;
 		att_head = a->parent;
 		printf("[%p] Requeuing parent %p\n", a, a->parent);
