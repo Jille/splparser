@@ -1,8 +1,8 @@
 CFLAGS=	-Wall -g
 LDFLAGS=	-lpthread -g
 
-parser: parser.o scanner.o input.o generator.o grammar.o
-	cc -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o grammar.o
+parser: parser.o scanner.o input.o generator.o lazyarray.o grammar.o
+	cc -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o lazyarray.o grammar.o
 
 scanner: scanner.o input.o generator.o grammar.o
 	cc -o scanner $(CFLAGS) $(LDFLAGS) scanner.c input.o generator.o grammar.o -DSTANDALONE
@@ -18,6 +18,9 @@ input.o: input.c Makefile
 
 generator.o: generator.c generator.h Makefile
 	cc -c $(CFLAGS) generator.c
+
+lazyarray.o: lazyarray.c lazyarray.h generator.o Makefile
+	cc -c $(CFLAGS) lazyarray.c
 
 grammar.o: grammar.c grammar.h Makefile
 	cc -c $(CFLAGS) grammar.c
