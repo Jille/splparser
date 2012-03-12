@@ -53,3 +53,5 @@ echo "		return 0;" >> tokens.h
 echo "}" >> tokens.h
 echo >> tokens.h
 echo "#endif /* TOKENS_H */" >> tokens.h
+
+sed -i 's/\\\*/*/g' tokens.h
