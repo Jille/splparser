@@ -26,6 +26,7 @@ struct attempt {
 	struct rulepart *parentbranch;
 	synt_tree **parenttree;
 	struct attempt *next;
+	int inputidx;
 };
 
 synt_error *create_synt_error();

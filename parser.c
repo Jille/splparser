@@ -2,20 +2,20 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
-#include "generator.h"
+#include "lazyarray.h"
 #include "scanner.h"
 #include "prototypes.h"
 #include "grammar.h"
 #include "parser.h"
 
-int parser(generator*, grammar*, synt_tree**, synt_error*);
-int ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e);
+int parser(lazyarray *, grammar*, synt_tree**, synt_error*);
+int ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e);
 
 struct attempt *att_head;
 
 int
 main(int argc, char **argv) {
-	generator *g  = generator_create(gen_tokens, "test.spl", 0);
+	lazyarray *g  = lazyarray_create(gen_tokens, "test.spl", 0);
 	grammar *gram = parse_grammar("grammar.g");
 
 	synt_error *e = create_synt_error();
@@ -36,7 +36,7 @@ main(int argc, char **argv) {
  * Don't forget to free() the returned trees.
  */
 int
-parser(generator *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
+parser(lazyarray *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 {
 	synt_tree *t = malloc(sizeof(synt_tree));
 	*res_tree = t;
@@ -60,6 +60,7 @@ parser(generator *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 	a->parentbranch = NULL;
 	a->parenttree = NULL;
 	a->next     = NULL;
+	a->inputidx = 0;
 
 	att_head = a;
 
@@ -102,7 +103,7 @@ kill_tree(synt_tree *t, synt_tree **zombies) {
  * Returns the number of succeeded unifications returned by reference.
  */
 int
-ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
+ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 {
 	printf("[att_queue] Working on %p\n", a);
 	if(*a->tree != NULL) {
@@ -117,23 +118,23 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 		} while(*a->tree != NULL);
 		while(graveyard != NULL) {
 			next = graveyard->next;
-			printf("Unshifted %s\n", token_to_string(graveyard->token->type));
-			generator_unshift(gen, graveyard->token);
+			// printf("Unshifted %s\n", token_to_string(graveyard->token->type));
+			// generator_unshift(gen, graveyard->token);
 			free(graveyard);
 			graveyard = next;
 		}
 		*a->tree = NULL;
 	}
 	printf("[%p] Upcoming input: \n", a);
-	peek_upcoming_input(gen, 10);
+	peek_upcoming_input(gen, a->inputidx, 50);
 
 	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
-			if(generator_eof(gen)) {
+			if(!lazyarray_exists(gen, a->inputidx)) {
 				fprintf(stderr, "Hit EOF while expecting %s\n", token_to_string(a->branch->token));
 				return 0;
 			}
-			struct token *t = generator_shift(gen);
+			struct token *t = lazyarray_get(gen, a->inputidx++);
 			printf("Shifted %s\n", token_to_string(t->type));
 			// fprintf(stderr, "parser(): > expected literal %s, read %s\n", token_to_string(a->branch->token), token_to_string(t->type));
 			*a->tree = malloc(sizeof(synt_tree));
@@ -145,6 +146,7 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 				// TODO better error
 				// TODO: unshift generator
 				update_synt_error(e, "Expected literal, read other literal", t->lineno, 0);
+				a->inputidx--;
 				// printf("Unshifted %s\n", token_to_string(t->type));
 				// generator_unshift(gen, t);
 				return 0;
@@ -169,6 +171,7 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 				new_attempt->parentbranch = a->branch->next;
 				new_attempt->parenttree = a->tree;
 				new_attempt->next     = att_head;
+				new_attempt->inputidx     = a->inputidx;
 				att_head = new_attempt;
 				printf("[%p] Queued %p (%s)\n", a, new_attempt, rule->name);
 			}
@@ -189,6 +192,7 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 		a->parent->branch = a->parentbranch;
 		a->parent->tree = a->parenttree;
 		a->parent->next = att_head;
+		a->parent->inputidx = a->inputidx;
 		att_head = a->parent;
 		printf("[%p] Requeuing parent %p\n", a, a->parent);
 		free(a);
@@ -196,44 +200,23 @@ ruleparser(generator *gen, grammar *gram, struct attempt *a, synt_error *e)
 	return 0;
 }
 
-/*
-while(!generator_eof(g)) {
-	struct token *t = generator_shift(g);
-	printf("Token: %s\n", token_to_string(t->type));
-		switch(t->type) {
-		case T_WORD:
-			printf("Value: '%s'\n", t->value.sval);
-			free(t->value.sval);
-			break;
-		case T_NUMBER:
-			printf("Value: %d\n", t->value.ival);
-			break;
-	}
-	free(t);
-}
-
-}
-*/
-
 void
 update_synt_error(synt_error *e, const char *error, int row, int col)
 {
 	// only update if new error is not earlier in the file
 	if(row > e->row || (row == e->row && col >= e->col)) {
-		free(e->error);
+		if(e->error)
+			free(e->error);
 		e->error = strdup(error);
 		e->row = row;
 		e->col = col;
 	}
 }
 
-synt_error*
+synt_error *
 create_synt_error()
 {
-	synt_error *e = malloc(sizeof(synt_error));
-	e->error = 0;
-	e->row = 0;
-	e->col = 0;
+	synt_error *e = calloc(1, sizeof(synt_error));
 	return e;
 }
 
@@ -263,11 +246,11 @@ show_synt_tree(synt_tree *t, int indent)
 }
 
 void
-peek_upcoming_input(generator *g, int num) {
+peek_upcoming_input(lazyarray *g, int base, int num) {
 	struct token *buf[num];
 	int i;
-	for(i = 0; num > i && !generator_eof(g); i++) {
-		buf[i] = generator_shift(g);
+	for(i = 0; num > i && lazyarray_exists(g, base + i); i++) {
+		buf[i] = lazyarray_get(g, base + i);
 		printf("Token: %s", token_to_string(buf[i]->type));
 		switch(buf[i]->type) {
 			case T_WORD:
@@ -281,6 +264,6 @@ peek_upcoming_input(generator *g, int num) {
 		}
 	}
 	for(i = i-1; 0 <= i; i--) {
-		generator_unshift(g, buf[i]);
+		// generator_unshift(g, buf[i]);
 	}
 }
