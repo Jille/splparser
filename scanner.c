@@ -32,7 +32,7 @@ gen_tokens(generator *g, void *arg) {
 	st.active->type = 0;
 	st.active->lineno = st.curline = 1;
 	int nextchar = SCN_NUL;
-	st.ig = generator_create(gen_input, arg, 0);
+	st.ig = generator_create(gen_input, arg, 1);
 
 	while(nextchar != SCN_NUL || !generator_eof(st.ig)) {
 		int in;
