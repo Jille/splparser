@@ -8,6 +8,8 @@
 #include "grammar.h"
 #include "parser.h"
 
+// #define VERBOSE_PARSER_DEBUG
+
 int parser(lazyarray *, grammar*, synt_tree**, synt_error*);
 int ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e);
 
@@ -64,7 +66,9 @@ parser(lazyarray *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 
 	att_head = a;
 
+#ifdef VERBOSE_PARSER_DEBUG
 	printf("[att_queue] Queued %p (S)\n", a);
+#endif
 
 	// if att_head becomes 0, all has failed, return syntax error
 	// if an attempt has succeeded parsing all input, return its tree
@@ -76,7 +80,9 @@ parser(lazyarray *gen, grammar *gram, synt_tree **res_tree, synt_error *e)
 			return 1;
 		}
 	}
+#ifdef VERBOSE_PARSER_DEBUG
 	printf("No valid parsing found\n");
+#endif
 	return 0;
 }
 
@@ -105,9 +111,13 @@ kill_tree(synt_tree *t, synt_tree **zombies) {
 int
 ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 {
+#ifdef VERBOSE_PARSER_DEBUG
 	printf("[att_queue] Working on %p\n", a);
+#endif
 	if(*a->tree != NULL) {
+#ifdef VERBOSE_PARSER_DEBUG
 		printf("[%p] Cleaning tree\n", a);
+#endif
 		// We moeten deze tree opruimen
 		synt_tree *graveyard = NULL, *next;
 		do {
@@ -125,8 +135,10 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 		}
 		*a->tree = NULL;
 	}
+#ifdef VERBOSE_PARSER_DEBUG
 	printf("[%p] Upcoming input: \n", a);
 	peek_upcoming_input(gen, a->inputidx, 50);
+#endif
 
 	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
@@ -135,7 +147,9 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 				return 0;
 			}
 			struct token *t = lazyarray_get(gen, a->inputidx++);
+#ifdef VERBOSE_PARSER_DEBUG
 			printf("Shifted %s\n", token_to_string(t->type));
+#endif
 			// fprintf(stderr, "parser(): > expected literal %s, read %s\n", token_to_string(a->branch->token), token_to_string(t->type));
 			*a->tree = malloc(sizeof(synt_tree));
 			(*a->tree)->type = 0;
@@ -154,7 +168,7 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 		} else {
 			struct rule *rule = &gram->rules[a->branch->rule];
 			int i;
-#ifndef NDEBUG
+#ifdef VERBOSE_PARSER_DEBUG
 			fprintf(stderr, "parser(): > trying to unify rule %d (%s)\n", a->branch->rule, rule->name);
 #endif
 			synt_tree *tree = malloc(sizeof(synt_tree));
@@ -173,7 +187,9 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 				new_attempt->next     = att_head;
 				new_attempt->inputidx     = a->inputidx;
 				att_head = new_attempt;
+#ifdef VERBOSE_PARSER_DEBUG
 				printf("[%p] Queued %p (%s)\n", a, new_attempt, rule->name);
+#endif
 			}
 			a->branch = NULL;
 			return 0;
@@ -181,16 +197,22 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 		a->branch = a->branch->next;
 	}
 
+#ifdef VERBOSE_PARSER_DEBUG
 	printf("[%p] Completed\n", a);
+#endif
 
 	if(a->branch == NULL) {
 		if(a->parent == NULL) {
 			// Wij zijn S
 			if(lazyarray_exists(gen, a->inputidx)) {
+#ifdef VERBOSE_PARSER_DEBUG
 				puts("Complete, but not at EOF");
+#endif
 				return 0;
 			}
+#ifdef VERBOSE_PARSER_DEBUG
 			puts("Great success");
+#endif
 			return 1;
 		}
 		a->parent->branch = a->parentbranch;
@@ -198,8 +220,11 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 		a->parent->next = att_head;
 		a->parent->inputidx = a->inputidx;
 		att_head = a->parent;
+#ifdef VERBOSE_PARSER_DEBUG
 		printf("[%p] Requeuing parent %p\n", a, a->parent);
-		free(a);
+#endif
+		// TODO: only free if there are no childs
+		//free(a);
 	}
 	return 0;
 }
