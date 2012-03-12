@@ -29,7 +29,7 @@ gen_tokens(generator *g, void *arg) {
 	struct scannerstate st;
 	st.active = malloc(sizeof(struct token));
 	st.active->type = 0;
-	st.curline = 1;
+	st.active->lineno = st.curline = 1;
 	int nextchar = SCN_NUL;
 	st.ig = generator_create(gen_input, arg, 0);
 
