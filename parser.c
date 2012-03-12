@@ -186,7 +186,11 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 	if(a->branch == NULL) {
 		if(a->parent == NULL) {
 			// Wij zijn S
-			printf("Great success\n");
+			if(lazyarray_exists(gen, a->inputidx)) {
+				puts("Complete, but not at EOF");
+				return 0;
+			}
+			puts("Great success");
 			return 1;
 		}
 		a->parent->branch = a->parentbranch;
