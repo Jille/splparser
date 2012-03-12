@@ -6,6 +6,8 @@
 #include "tokens.h"
 #include "grammar.h"
 
+// #define VERBOSE_GRAMMAR_DEBUG
+
 int
 get_id_for_rule(grammar *g, char *rule) {
 	int i;
@@ -19,7 +21,9 @@ get_id_for_rule(grammar *g, char *rule) {
 	memset(&g->rules[g->lastrule], 0, sizeof(struct rule));
 	g->rules[g->lastrule].id = g->lastrule;
 	g->rules[g->lastrule].name = strdup(rule);
+#ifdef VERBOSE_GRAMMAR_DEBUG
 	printf("Creating rule %d for %s\n", g->lastrule, rule);
+#endif
 	return g->lastrule;
 }
 
@@ -73,7 +77,9 @@ parse_grammar(char *file) {
 		*def = 0;
 		def += 4;
 		def[strlen(def) - 1] = 0;
+#ifdef VERBOSE_GRAMMAR_DEBUG
 		printf("'%s': '%s'\n", buf, def);
+#endif
 
 		struct rule *rule = &g->rules[get_id_for_rule(g, buf)];
 		int branchno = 0;
@@ -88,7 +94,9 @@ parse_grammar(char *file) {
 			rule->branches[branchno++] = parse_branch(g, branch);
 			assert(branchno < (sizeof(rule->branches) / sizeof(struct rulepart *)));
 		} while(nextbranch != NULL);
+#ifdef VERBOSE_GRAMMAR_DEBUG
 		printf("Found %d branches for rule %s\n", branchno, rule->name);
+#endif
 	}
 	fclose(fh);
 	return g;
@@ -99,10 +107,14 @@ show_grammar(grammar *g) {
 	int i;
 	for(i = 0; g->lastrule >= i; i++) {
 		if(g->rules[i].branches[0] == NULL) {
+#ifdef VERBOSE_GRAMMAR_DEBUG
 			printf("Rule %s (#%d) not defined\n", g->rules[i].name, i);
+#endif
 			continue;
 		}
+#ifdef VERBOSE_GRAMMAR_DEBUG
 		printf("Rule %s :=\n", g->rules[i].name);
+#endif
 		int b;
 		for(b = 0; g->rules[i].branches[b] != NULL; b++) {
 			struct rulepart *p = g->rules[i].branches[b];
