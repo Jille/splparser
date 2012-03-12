@@ -26,7 +26,7 @@ main(int argc, char **argv) {
 		return 1;
 	}
 	printf("Syntax tree:\n");
-	show_synt_tree(t, 0);
+	show_synt_tree(t, 0, gram);
 
 	free(t);
 	return 0;
@@ -123,7 +123,7 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 		do {
 			next = (*a->tree)->next;
 #ifdef VERBOSE_PARSER_DEBUG
-			show_synt_tree(*a->tree, 2);
+			show_synt_tree(*a->tree, 2, gram);
 #endif
 			kill_tree(*a->tree, &graveyard);
 			*a->tree = next;
@@ -179,6 +179,7 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 			tree->type = 1;
 			tree->next = NULL;
 			tree->fst_child = NULL;
+			tree->rule = a->branch->rule;
 			*a->tree = tree;
 			a->tree = &(*a->tree)->next;
 			for(i = 0; rule->branches[i] != NULL; ++i) {
@@ -262,19 +263,30 @@ print_indent(int indent) {
 }
 
 void
-show_synt_tree(synt_tree *t, int indent)
+show_synt_tree(synt_tree *t, int indent, grammar *gram)
 {
-	print_indent(indent);
-	printf("ptr: %p (type %d)\n", t, t->type);
+	assert(t->type == 0 || t->type == 1);
 	if(t->type == 1) {
+		struct rule *rule = &gram->rules[t->rule];
+		print_indent(indent);
+		printf("%s\n", rule->name);
 		synt_tree *el = t->fst_child;
 		while(el != NULL) {
-			show_synt_tree(el, indent + 1);
+			show_synt_tree(el, indent + 1, gram);
 			el = el->next;
 		}
 	} else {
 		print_indent(indent);
 		printf("Token: %s\n", token_to_string(t->token->type));
+		switch(t->token->type) {
+		case T_WORD:
+			print_indent(indent);
+			printf("Value: %s\n", t->token->value.sval);
+			break;
+		case T_NUMBER:
+			print_indent(indent);
+			printf("Value: %d\n", t->token->value.ival);
+		}
 	}
 }
 

@@ -33,4 +33,4 @@ synt_error *create_synt_error();
 
 void update_synt_error(synt_error*, const char *error, int row, int col);
 
-void show_synt_tree(synt_tree*, int indent);
+void show_synt_tree(synt_tree*, int indent, grammar *gram);
