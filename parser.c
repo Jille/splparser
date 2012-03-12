@@ -122,7 +122,9 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 		synt_tree *graveyard = NULL, *next;
 		do {
 			next = (*a->tree)->next;
+#ifdef VERBOSE_PARSER_DEBUG
 			show_synt_tree(*a->tree, 2);
+#endif
 			kill_tree(*a->tree, &graveyard);
 			*a->tree = next;
 		} while(*a->tree != NULL);
