@@ -18,8 +18,8 @@ helloworld() {
 
 Int
 main(Int argc, [Int] argv) {
-	Int ret;
+	Int ret = 0;
 	helloworld();
-	ret = 0;
+	ret = 1;
 	return ret;
 }
