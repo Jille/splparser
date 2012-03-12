@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <err.h>
+#include <stdint.h>
 #include "generator.h"
 
 void
@@ -13,7 +14,7 @@ gen_input(generator *g, void *arg) {
 		if(in == EOF) {
 			break;
 		}
-		generator_yield(g, (void *)(int)in);
+		generator_yield(g, (void *)(intptr_t)in);
 	}
 	fclose(fh);
 }

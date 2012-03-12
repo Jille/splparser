@@ -36,7 +36,7 @@ gen_tokens(generator *g, void *arg) {
 	while(nextchar != SCN_NUL || !generator_eof(st.ig)) {
 		int in;
 		if(nextchar == SCN_NUL) {
-			in = (int)generator_shift(st.ig);
+			in = (intptr_t)generator_shift(st.ig);
 		} else {
 			in = nextchar;
 			assert(in >= 0 && in < 256);
@@ -110,7 +110,7 @@ scan_initial_int(struct scannerstate *st, int in) {
 	int num = in - '0';
 
 	while(!generator_eof(st->ig)) {
-		in = (int)generator_shift(st->ig);
+		in = (intptr_t)generator_shift(st->ig);
 		switch(in) {
 			case SCN_CASE_DIGIT:
 				num *= 10;
@@ -135,17 +135,17 @@ scan_initial_lower(struct scannerstate *st, int in) {
 
 	while(!generator_eof(st->ig)) {
 		if(buf + sizeof(buf) == bufp) {
-			asprintf(&st->error, "Word '%.*s...' too long.", sizeof(buf), buf);
+			asprintf(&st->error, "Word '%.*s...' too long.", (int)sizeof(buf), buf);
 			return SCN_ERR;
 		}
-		in = (int)generator_shift(st->ig);
+		in = (intptr_t)generator_shift(st->ig);
 		switch(in) {
 			case SCN_CASE_DIGIT:
 			case SCN_CASE_LOWER:
 				*bufp++ = in;
 				break;
 			case SCN_CASE_UPPER:
-				asprintf(&st->error, "Word '%.*s...' contains invalid uppercase character.", bufp - buf, buf);
+				asprintf(&st->error, "Word '%.*s...' contains invalid uppercase character.", (int)(bufp - buf), buf);
 				return SCN_ERR;
 			default:
 				goto done;
@@ -178,16 +178,16 @@ scan_initial_upper(struct scannerstate *st, int in) {
 
 	while(!generator_eof(st->ig)) {
 		if(buf + sizeof(buf) == bufp) {
-			asprintf(&st->error, "Word '%.*s...' too long.", sizeof(buf), buf);
+			asprintf(&st->error, "Word '%.*s...' too long.", (int)sizeof(buf), buf);
 			return SCN_ERR;
 		}
-		in = (int)generator_shift(st->ig);
+		in = (intptr_t)generator_shift(st->ig);
 		switch(in) {
 			case SCN_CASE_ALPHA:
 				*bufp++ = in;
 				break;
 			case SCN_CASE_DIGIT:
-				asprintf(&st->error, "Keyword '%.*s...' contains digit.", bufp - buf, buf);
+				asprintf(&st->error, "Keyword '%.*s...' contains digit.", (int)(bufp - buf), buf);
 				return SCN_ERR;
 			default:
 				goto done;
@@ -243,7 +243,7 @@ scan_initial_sign(struct scannerstate *st, int in) {
 			if(generator_eof(st->ig)) {
 				in2 = SCN_EOF;
 			} else {
-				in2 = (int)generator_shift(st->ig);
+				in2 = (intptr_t)generator_shift(st->ig);
 			}
 			switch(in2) {
 				case '=':

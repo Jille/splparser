@@ -1,4 +1,4 @@
-CFLAGS=	-Wall -g
+CFLAGS=	-Wall -Wno-unused-function -g
 LDFLAGS=	-lpthread -g
 
 parser: parser.o scanner.o input.o generator.o lazyarray.o grammar.o
