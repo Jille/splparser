@@ -145,7 +145,9 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 	while(a->branch != NULL) {
 		if(a->branch->is_literal) {
 			if(!lazyarray_exists(gen, a->inputidx)) {
+#ifdef VERBOSE_PARSER_DEBUG
 				fprintf(stderr, "Hit EOF while expecting %s\n", token_to_string(a->branch->token));
+#endif
 				return 0;
 			}
 			struct token *t = lazyarray_get(gen, a->inputidx++);
