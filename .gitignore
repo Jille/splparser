@@ -3,3 +3,4 @@ scanner
 grammar
 tokens.h
 *.o
+*.dSYM
