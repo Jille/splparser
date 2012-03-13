@@ -17,7 +17,7 @@ struct attempt *att_head;
 
 int
 main(int argc, char **argv) {
-	lazyarray *g  = lazyarray_create(gen_tokens, "test.spl", 0);
+	lazyarray *g  = lazyarray_create(gen_tokens, "test.spl", 1);
 	grammar *gram = parse_grammar("grammar.g");
 
 	synt_error *e = create_synt_error();
