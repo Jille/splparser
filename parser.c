@@ -28,6 +28,10 @@ main(int argc, char **argv) {
 	printf("Syntax tree:\n");
 	show_synt_tree(t, 0, gram);
 
+	printf("Pretty print:\n");
+	struct pretty_print_state state = {0, 0};
+	pretty_print(t, &state, gram);
+
 	free(t);
 	return 0;
 }
@@ -286,6 +290,139 @@ show_synt_tree(synt_tree *t, int indent, grammar *gram)
 		case T_NUMBER:
 			print_indent(indent);
 			printf("Value: %d\n", t->token->value.ival);
+		}
+	}
+}
+
+void
+pretty_print(synt_tree *t, struct pretty_print_state *state, grammar *gram)
+{
+	assert(state != NULL);
+#define WHITESPACE_TEXT_BEGIN if(state->had_text) { printf(" "); }
+
+	if(t->type == 1) {
+		synt_tree *el = t->fst_child;
+		while(el != NULL) {
+			pretty_print(el, state, gram);
+			if(el->type == 1) {
+				struct rule *subrule = &gram->rules[el->rule];
+				if(strcmp(subrule->name, "FunDecl") == 0
+				|| strcmp(subrule->name, "VarDecl") == 0
+				|| strcmp(subrule->name, "RetType") == 0
+				|| strcmp(subrule->name, "Stmt")    == 0)
+				{
+					printf("\n");
+					print_indent(state->indent);
+					state->had_text = 0;
+				}
+			}
+			el = el->next;
+		}
+	} else {
+		switch(t->token->type) {
+		case T_INT:
+			WHITESPACE_TEXT_BEGIN;
+			printf("Int");
+			state->had_text = 1;
+			break;
+		case T_BOOL:
+			WHITESPACE_TEXT_BEGIN;
+			printf("Bool");
+			state->had_text = 1;
+			break;
+		case T_VOID:
+			WHITESPACE_TEXT_BEGIN;
+			printf("Void");
+			state->had_text = 1;
+			break;
+		case T_WORD:
+			WHITESPACE_TEXT_BEGIN;
+			printf("%s", t->token->value.sval);
+			state->had_text = 1;
+			break;
+		case T_NUMBER:
+			WHITESPACE_TEXT_BEGIN;
+			printf("%d", t->token->value.ival);
+			state->had_text = 1;
+			break;
+		case T_IF:
+			WHITESPACE_TEXT_BEGIN;
+			printf("if");
+			state->had_text = 1;
+			break;
+		case T_WHILE:
+			WHITESPACE_TEXT_BEGIN;
+			printf("while");
+			state->had_text = 1;
+			break;
+		case T_ELSE:
+			WHITESPACE_TEXT_BEGIN;
+			printf("else");
+			state->had_text = 1;
+			break;
+		case T_RETURN:
+			WHITESPACE_TEXT_BEGIN;
+			printf("return");
+			state->had_text = 1;
+			break;
+		case T_TRUE:
+			WHITESPACE_TEXT_BEGIN;
+			printf("True");
+			state->had_text = 1;
+			break;
+		case T_FALSE:
+			WHITESPACE_TEXT_BEGIN;
+			printf("False");
+			state->had_text = 1;
+			break;
+		case T_AND:
+			printf(" && ");
+			state->had_text = 0;
+			break;
+		case T_OR:
+			printf(" || ");
+			state->had_text = 0;
+			break;
+		case T_EQ:
+			printf(" == ");
+			state->had_text = 0;
+			break;
+		case T_NE:
+			printf(" != ");
+			state->had_text = 0;
+			break;
+		case T_GTE:
+			printf(" >= ");
+			state->had_text = 0;
+			break;
+		case T_LTE:
+			printf(" <= ");
+			state->had_text = 0;
+			break;
+		case '{':
+			printf("{\n");
+			(state->indent)++;
+			print_indent(state->indent);
+			state->had_text = 0;
+			break;
+		case '}':
+			assert(state->indent > 0);
+			printf("\b\b}\n");
+			(state->indent)--;
+			print_indent(state->indent);
+			state->had_text = 0;
+			break;
+		case ',':
+			printf(", ");
+			state->had_text = 0;
+			break;
+		case ']':
+			printf("]");
+			state->had_text = 1;
+			break;
+		default:
+			printf("%c", t->token->type);
+			state->had_text = 0;
 		}
 	}
 }
