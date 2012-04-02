@@ -419,7 +419,7 @@ DESCEND_FUNC(funcall) {
 		chld = chld->next;
 	}
 	assert(chld->token->type == ')');
-	if(arg != NULL && t->next == 0) {
+	if(arg != NULL && arg != tg->curfunc) {
 		memcpy(arg, f->returntype, sizeof(struct type));
 	}
 }
@@ -451,6 +451,7 @@ DESCEND_FUNC(expression_simple) {
 
 // Always returns a struct type* in arg
 DESCEND_FUNC(expression) {
+	// XXX split this function into some smaller parts for Exp[23456]
 	assert(t->type == 1);
 	assert(t->fst_child != 0);
 	assert(arg != 0);
