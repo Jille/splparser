@@ -33,6 +33,7 @@ struct tc_func {
 };
 struct tc_globals {
 	grammar *gram;
+	struct type *types[2000];
 	struct tc_func *funcs;
 	struct tc_func **funcs_last;
 	struct vardecl *decls;
@@ -94,6 +95,36 @@ DESCEND_FUNC(type) {
 			assert(fc->next->next->type == 0 && fc->next->next->token->type == ']');
 			break;
 	}
+
+	int i;
+	for(i = 0; tg->types[i] != NULL; i++) {
+		assert(i < 2000 /* static allocated buffer overflow */);
+		if((*typepp)->type != tg->types[i]->type) {
+			continue;
+		}
+		switch(tg->types[i]->type) {
+			case T_INT:
+			case T_BOOL:
+				goto match;
+			case '[':
+				if((*typepp)->list_type == tg->types[i]->list_type) {
+					goto match;
+				}
+				break;
+			case '(':
+				if((*typepp)->fst_type == tg->types[i]->fst_type && (*typepp)->snd_type == tg->types[i]->snd_type) {
+					goto match;
+				}
+				break;
+			default:
+				abort();
+		}
+	}
+	tg->types[i] = *typepp;
+	return;
+
+match:
+	*typepp = tg->types[i];
 }
 
 DESCEND_FUNC(vardecl) {
@@ -193,6 +224,7 @@ typechecker(synt_tree *t, grammar *gram) {
 	struct tc_globals tg;
 	tg.gram = gram;
 	tg.funcs_last = &tg.funcs;
+	memset(&tg.types, 0, sizeof(tg.types));
 	rule_handlers = malloc((gram->lastrule + 1) * sizeof(descend_ft));
 	for(i = 0; gram->lastrule >= i; i++) {
 		rule_handlers[i] = tc_descend_simple;
