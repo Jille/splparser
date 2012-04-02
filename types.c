@@ -181,8 +181,8 @@ unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
 			case '(':
 				unify_types(tg, store->fst_type, data->fst_type);
 				unify_types(tg, store->snd_type, data->snd_type);
-				break;
 		}
+		return;
 	}
 	fprintf(stderr, "Type unification failed\n");
 	abort();
