@@ -380,6 +380,48 @@ DESCEND_FUNC(assignment) {
 	unify_types(tg, var->type, &datatype);
 }
 
+DESCEND_FUNC(funcall) {
+	struct tc_func *f;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_WORD);
+	f = lookup_function(tg, chld->token->value.sval);
+	chld = chld->next;
+	assert(chld->token->type == '(');
+	chld = chld->next;
+	if(chld->type == 1) {
+		synt_tree *henk = chld->fst_child;
+		struct func_arg *fa = f->args;
+
+		while(fa != NULL) {
+			struct type datatype;
+			tc_descend(tg, henk->rule, henk, &datatype);
+			unify_types(tg, fa->type, &datatype);
+			fa = fa->next;
+			if(henk->next == NULL) {
+				henk = NULL;
+				break;
+			}
+			assert(henk->next->token->type == ',');
+			henk = henk->next->next->fst_child;
+		}
+		if(fa != NULL) {
+			fprintf(stderr, "Not enough arguments for function %s\n", f->name);
+			abort();
+		}
+		if(henk != NULL) {
+			fprintf(stderr, "Too many arguments for function %s\n", f->name);
+			abort();
+		}
+
+		chld = chld->next;
+	}
+	assert(chld->token->type == ')');
+	if(arg != NULL) {
+		memcpy(arg, f->returntype, sizeof(struct type));
+	}
+}
+
 // Always returns an char in arg
 DESCEND_FUNC(expression_simple) {
 	assert(t->type == 0);
@@ -539,5 +581,6 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(If, if);
 	SET_RULE_HANDLER(While, while);
 	SET_RULE_HANDLER(Assignment, assignment);
+	SET_RULE_HANDLER(FunCall, funcall);
 	tc_descend(&tg, get_id_for_rule(gram, "S"), t, NULL);
 }
