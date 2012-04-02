@@ -37,6 +37,7 @@ struct tc_func {
 };
 struct tc_globals {
 	grammar *gram;
+	int funcall_rule;
 	struct type *types[2000];
 	struct tc_func *funcs;
 	struct tc_func **funcs_last;
@@ -440,8 +441,17 @@ DESCEND_FUNC(funcall) {
 		chld = chld->next;
 	}
 	assert(chld->token->type == ')');
-	if(arg != NULL && arg != tg->curfunc) {
+	if(arg != NULL) {
 		memcpy(arg, f->returntype, sizeof(struct type));
+	}
+}
+
+DESCEND_FUNC(stmt) {
+	if(t->fst_child->type == 1 && t->fst_child->rule == tg->funcall_rule) {
+		printf("FunCall!\n");
+		tc_descend_simple(tg, t, NULL);
+	} else {
+		tc_descend_simple(tg, t, arg);
 	}
 }
 
@@ -487,11 +497,11 @@ DESCEND_FUNC(expression) {
 			tc_descend_expression_simple(tg, t->fst_child, arg);
 		else {
 			// If this is a FunCall, type is the function type
-			struct rule *rule = &tg->gram->rules[t->fst_child->rule];
-			if(strcmp(rule->name, "FunCall") == 0)
-				tc_descend_funcall(tg, t->fst_child, arg);
-			else
+			if(t->fst_child->rule == tg->funcall_rule) {
+				tc_descend(tg, t->fst_child, arg);
+			} else {
 				tc_descend_expression(tg, t->fst_child, arg);
+			}
 		}
 		return;
 	}
@@ -618,6 +628,7 @@ typechecker(synt_tree *t, grammar *gram) {
 	struct tc_globals tg;
 	memset(&tg, 0, sizeof(struct tc_globals));
 	tg.gram = gram;
+	tg.funcall_rule = get_id_for_rule(gram, "FunCall");
 	tg.funcs_last = &tg.funcs;
 	rule_handlers = malloc((gram->lastrule + 1) * sizeof(descend_ft));
 	for(i = 0; gram->lastrule >= i; i++) {
@@ -636,5 +647,6 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Assignment, assignment);
 	SET_RULE_HANDLER(FunCall, funcall);
 	SET_RULE_HANDLER(Return, return);
+	SET_RULE_HANDLER(Stmt, stmt);
 	tc_descend(&tg, t, NULL);
 }
