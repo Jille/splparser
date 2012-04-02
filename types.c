@@ -503,8 +503,8 @@ DESCEND_FUNC(expression) {
 				assert(t->fst_child->next->next->token->type == ',');
 				assert(t->fst_child->next->next->next->next->token->type == ')');
 				res->type = '(';
-				res->fst_type = calloc(1, sizeof(struct type*));
-				res->snd_type = calloc(1, sizeof(struct type*));
+				res->fst_type = calloc(1, sizeof(struct type));
+				res->snd_type = calloc(1, sizeof(struct type));
 				tc_descend_expression(tg, t->fst_child->next, res->fst_type);
 				tc_descend_expression(tg, t->fst_child->next->next->next, res->snd_type);
 			}
