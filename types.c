@@ -52,7 +52,7 @@ typedef void (*descend_ft)(DESCEND_ARGS);
 descend_ft *rule_handlers;
 
 void
-show_type(struct tc_globals *tg, int indent, struct type *t)
+show_type(int indent, struct type *t)
 {
 	print_indent(indent);
 	printf("Type: ");
@@ -62,13 +62,13 @@ show_type(struct tc_globals *tg, int indent, struct type *t)
 			printf("Empty list of any type\n");
 		} else {
 			printf("List of type:\n");
-			show_type(tg, indent + 1, t->list_type);
+			show_type(indent + 1, t->list_type);
 		}
 		return;
 	case '(':
 		printf("Tuple of types:\n");
-		show_type(tg, indent + 1, t->fst_type);
-		show_type(tg, indent + 1, t->snd_type);
+		show_type(indent + 1, t->fst_type);
+		show_type(indent + 1, t->snd_type);
 		return;
 	case 'a':
 		printf("Anonymous type with scope %s\n", t->scope);
