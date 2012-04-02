@@ -572,14 +572,25 @@ DESCEND_FUNC(expression) {
 		if(fst.type != snd.type)
 			PARSING_FAIL("Binary or numeric equality (==, !=) can only work on two equal types");
 		res->type = T_BOOL;
+		return;
 	// Numeric mathematical operators
 	case '+': case '-': case '*': case '/': case '%':
 		if(fst.type != T_INT || snd.type != T_INT)
 			PARSING_FAIL("Numeric mathematics (+, -, *, /, %) work only on integers");
 		res->type = T_INT;
 		return;
+	// List composition operator
+	case ':':
+		if(snd.type != '[')
+			PARSING_FAIL("List composition (:) needs a list on the right side");
+		if(snd.list_type == 0 || snd.list_type->type != fst.type)
+			PARSING_FAIL("List composition (:) types don't match");
+		res->type = '[';
+		res->list_type = calloc(1, sizeof(struct type));
+		res->list_type->type = fst.type;
+		return;
 	default:
-		fprintf(stderr, "Unexpected operator in Expression type checking\n");
+		fprintf(stderr, "Unexpected operator in Expression type checking: %s\n", token_to_string(t->fst_child->next->token->type));
 		abort();
 	}
 }
