@@ -261,7 +261,7 @@ create_synt_error()
 	return e;
 }
 
-static void
+void
 print_indent(int indent) {
 	int i;
 	for(i = 0; indent > i; i++) {
