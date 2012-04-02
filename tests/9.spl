@@ -1,0 +1,6 @@
+Int
+main(Int argc) {
+	if(True)
+		argc = argc + 1;
+	return argc;
+}

@@ -1,0 +1,26 @@
+Void
+putchar(Int x) {
+	return;
+}
+
+Int
+head([Int] list) {
+	return 5;
+}
+
+[Int]
+tail([Int] list) {
+	return list;
+}
+
+Void
+main(Int argc, [Int] argv) {
+	Int i = 0;
+	[Int] rest = argv;
+	while(argc > i) {
+		putchar(head(argv));
+		rest = tail(argv);
+		i = i+1;
+	}
+	return;
+}
