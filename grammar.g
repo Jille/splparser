@@ -10,12 +10,8 @@ If := T_IF '(' Exp ')' Stmt T_ELSE Stmt | T_IF '(' Exp ')' Stmt
 While := T_WHILE '(' Exp ')' Stmt
 Return := T_RETURN Exp ';' | T_RETURN ';'
 Assignment := T_WORD '=' Exp ';'
-# Exp := T_WORD Exp' | Op1 Exp Exp' | T_NUMBER Exp' | T_FALSE Exp' | T_TRUE Exp' | '(' Exp ')' Exp' | FunCall Exp' | '[' ']' Exp' | '(' Exp ',' Exp ')' Exp' | T_WORD | Op1 Exp | T_NUMBER | T_FALSE | T_TRUE | '(' Exp ')' | FunCall | '[' ']' | '(' Exp ',' Exp ')'
-# Exp' := Exp Op2 Exp | T_WORD | Op1 Exp | T_NUMBER | T_FALSE | T_TRUE | '(' Exp ')' | FunCall | '[' ']' | '(' Exp ',' Exp ')'
 FunCall := T_WORD '(' ')' | T_WORD '(' ActArgs ')'
 ActArgs := Exp | Exp ',' ActArgs
-# Op2 := '+' | '-' | '*' | '/' | '%' | T_EQ | '<' | '>' | T_LTE | T_GTE | T_NE | T_AND | T_OR | ':'
-# Op1 := '!' | '-'
 CompOp := T_EQ | '<' | '>' | T_LTE | T_GTE | T_NE | T_AND | T_OR
 AddOp := '+' | '-'
 MultOp := '*' | '/' | '%'
