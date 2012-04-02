@@ -1,14 +1,17 @@
 CFLAGS=	-Wall -Wno-unused-function -g
 LDFLAGS=	-lpthread -g
 
-parser: parser.o scanner.o input.o generator.o lazyarray.o grammar.o
-	cc -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o lazyarray.o grammar.o
+parser: parser.o scanner.o input.o generator.o lazyarray.o grammar.o types.o
+	cc -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o lazyarray.o grammar.o types.o
 
 scanner: scanner.o input.o generator.o grammar.o
 	cc -o scanner $(CFLAGS) $(LDFLAGS) scanner.c input.o generator.o grammar.o -DSTANDALONE
 
 parser.o: parser.c tokens.h Makefile
 	cc -c $(CFLAGS) parser.c
+
+types.o: types.c types.h Makefile
+	cc -c $(CFLAGS) types.c
 
 scanner.o: scanner.c scanner.h tokens.h Makefile
 	cc -c $(CFLAGS) scanner.c
