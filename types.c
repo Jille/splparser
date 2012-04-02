@@ -457,9 +457,13 @@ DESCEND_FUNC(expression) {
 
 	// If we have only one child, simply return its type
 	if(t->fst_child->next == 0) {
-		if(t->fst_child->type == 0) {
-			tc_descend_expression_simple(tg, t->fst_child, &res->type);
-		} else
+		// If this is a FunCall, type is the function type
+		struct rule *rule = &tg->gram->rules[t->fst_child->rule];
+		if(strcmp(rule->name, "FunCall") == 0)
+			tc_descend_funcall(tg, t->fst_child, arg);
+		else if(t->fst_child->type == 0)
+			tc_descend_expression_simple(tg, t->fst_child, arg);
+		else
 			tc_descend_expression(tg, t->fst_child, arg);
 		return;
 	}
@@ -506,15 +510,6 @@ DESCEND_FUNC(expression) {
 			tc_descend_expression_simple(tg, t->fst_child, arg);
 			return;
 		}
-	}
-
-	// If first literal is a FunCall, type is the function type
-	struct rule *rule = &tg->gram->rules[t->fst_child->rule];
-	if(strcmp(rule->name, "FunCall")) {
-		// TODO: ask symbol table what the type of this function is
-		fprintf(stderr, "TODO: ask symbol table what type of this function is\n");
-		res->type = T_NUMBER;
-		return;
 	}
 
 	// First literal is an Expression. From now on, types are dictated
