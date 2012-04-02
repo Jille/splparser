@@ -1,3 +1,8 @@
+[Bool]
+putchar(Int henk) {
+	return [];
+}
+
 Void
 helloworld() {
 	(Int, [Bool]) henk = (5, []);
