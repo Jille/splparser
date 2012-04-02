@@ -427,6 +427,10 @@ pretty_print(synt_tree *t, struct pretty_print_state *state, grammar *gram)
 			printf(" = ");
 			state->had_text = 0;
 			break;
+		case ')':
+			printf(")");
+			state->had_text = 1;
+			break;
 		default:
 			printf("%c", t->token->type);
 			state->had_text = 0;
