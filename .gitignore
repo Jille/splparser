@@ -4,3 +4,4 @@ grammar
 tokens.h
 *.o
 *.dSYM
+.DS_Store
