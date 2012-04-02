@@ -1,0 +1,45 @@
+Bool
+isempty([Int] list) {
+	return True;
+}
+
+[Int]
+tail([Int] list) {
+	return [];
+}
+
+Int
+head([Int] list) {
+	return 0;
+}
+
+[Int]
+foo(Int number, Int amnt) {
+	[Int] list = [];
+	while(amnt > 0) {
+		list = number : list;
+		amnt = amnt - 1;
+	}
+	return list;
+}
+
+Int
+main(Int argc, [Int] argv) {
+	Int number = 5;
+	[Int] list = [];
+	if(argc > 0) {
+		number = head(argv);
+	}
+	list = foo(5, number);
+	while(number > 0) {
+		if(isempty(list)) {
+			return 1;
+		}
+		list = tail(list);
+	}
+	if(isempty(list)) {
+		return 0;
+	} else {
+		return 1;
+	}
+}

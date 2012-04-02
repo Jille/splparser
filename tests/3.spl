@@ -1,0 +1,11 @@
+Int
+main(Int argc, [Int] argv) {
+	Bool foo = True;
+	Int res = 0;
+	if(foo) {
+		res = 1;
+	} else {
+		res = 2;
+	}
+	return res;
+}

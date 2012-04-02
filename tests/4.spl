@@ -1,0 +1,7 @@
+Int foo = 0;
+
+Int
+main(Int argc, [Int] argv) {
+	foo = 1;
+	return foo;
+}
