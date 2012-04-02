@@ -521,9 +521,9 @@ void
 typechecker(synt_tree *t, grammar *gram) {
 	int i;
 	struct tc_globals tg;
+	memset(&tg, 0, sizeof(struct tc_globals));
 	tg.gram = gram;
 	tg.funcs_last = &tg.funcs;
-	memset(&tg.types, 0, sizeof(tg.types));
 	rule_handlers = malloc((gram->lastrule + 1) * sizeof(descend_ft));
 	for(i = 0; gram->lastrule >= i; i++) {
 		rule_handlers[i] = tc_descend_simple;
