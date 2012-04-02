@@ -3,13 +3,17 @@
 #define LOCAL_SYMBOL 2
 
 struct type {
-	char type; // T_VOID, T_NUMBER, T_BOOL, '[' or '('
+	char type; // T_VOID, T_NUMBER, T_BOOL, '[', '(' or 'a'
 	union {
-		struct type *list_type;
+		// if type == '[':
+		struct type *list_type; // 0 if list type is unknown
+		// if type == '(':
 		struct {
 			struct type *fst_type;
 			struct type *snd_type;
 		};
+		// if type == 'a':
+		const char *scope; // 0 or name of a function
 	};
 };
 
