@@ -19,6 +19,39 @@ typedef void (*descend_ft)(DESCEND_ARGS);
 descend_ft *rule_handlers;
 
 void
+show_type(struct tc_globals *tg, int indent, struct type *t)
+{
+	print_indent(indent);
+	printf("Type: ");
+	switch(t->type) {
+	case '[':
+		if(t->list_type == 0) {
+			printf("Empty list of any type\n");
+		} else {
+			printf("List of type:\n");
+			show_type(tg, indent + 1, t->list_type);
+		}
+		return;
+	case '(':
+		printf("Tuple of types:\n");
+		show_type(tg, indent + 1, t->fst_type);
+		show_type(tg, indent + 1, t->snd_type);
+		return;
+	case 'a':
+		printf("Anonymous type with scope %s\n", t->scope);
+		return;
+	case T_NUMBER:
+		printf("Integer\n");
+		return;
+	case T_BOOL:
+		printf("Boolean\n");
+		return;
+	default:
+		printf("Unknown type %d\n", t->type);
+	}
+}
+
+void
 tc_descend(struct tc_globals *tg, int rule, synt_tree *t, void *arg) {
 	rule_handlers[rule](tg, t, arg);
 }
