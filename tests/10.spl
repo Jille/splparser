@@ -1,0 +1,5 @@
+Int
+main() {
+	Int bar = bar+1;
+	return bar;
+}
