@@ -9,8 +9,38 @@
 #include "parser.h"
 #include "types.h"
 
+struct vardecl {
+	char *name;
+	struct type *type;
+	synt_tree *initial;
+	struct vardecl *next;
+};
+struct func_arg {
+	char *name;
+	struct type *type;
+	struct func_arg *next;
+};
+struct tc_func {
+	struct type *returntype;
+	char *name;
+	struct func_arg *args;
+	struct vardecl *decls;
+	synt_tree *stmts;
+	struct func_arg **args_last;
+	struct vardecl **decls_last;
+	synt_tree **stmts_last;
+	struct tc_func *next;
+};
 struct tc_globals {
 	grammar *gram;
+	struct type *types[2000];
+	struct tc_func *funcs;
+	struct tc_func **funcs_last;
+	struct vardecl *decls;
+	struct vardecl **decls_last;
+
+	// Temporary hack
+	struct tc_func *curfunc;
 };
 
 #define PARSING_FAIL(x) do { fprintf(stderr, "Error while parsing: %s\n", x); abort(); } while(0)
@@ -56,12 +86,15 @@ show_type(struct tc_globals *tg, int indent, struct type *t)
 
 void
 tc_descend(struct tc_globals *tg, int rule, synt_tree *t, void *arg) {
+	assert(t->type == 1);
+	assert(rule == t->rule); // XXX argument rule kan weg.
+	printf("Enter %s\n", tg->gram->rules[rule].name);
 	rule_handlers[rule](tg, t, arg);
+	printf("Leave %s\n", tg->gram->rules[rule].name);
 }
 
 DESCEND_FUNC(simple) {
 	synt_tree *chld;
-	assert(t->type == 1);
 
 	chld = t->fst_child;
 	while(chld != NULL) {
@@ -78,7 +111,7 @@ DESCEND_FUNC(parallel) {
 }
 
 DESCEND_FUNC(type) {
-	struct type **typepp = (struct type **)arg;
+	struct type **typepp = arg;
 	synt_tree *fc = t->fst_child;
 	assert(t->type == 1);
 	assert(fc->type == 0);
@@ -100,12 +133,250 @@ DESCEND_FUNC(type) {
 			assert(fc->next->next->type == 0 && fc->next->next->token->type == ']');
 			break;
 	}
+
+	int i;
+	for(i = 0; tg->types[i] != NULL; i++) {
+		assert(i < 2000 /* static allocated buffer overflow */);
+		if((*typepp)->type != tg->types[i]->type) {
+			continue;
+		}
+		switch(tg->types[i]->type) {
+			case T_INT:
+			case T_BOOL:
+				goto match;
+			case '[':
+				if((*typepp)->list_type == tg->types[i]->list_type) {
+					goto match;
+				}
+				break;
+			case '(':
+				if((*typepp)->fst_type == tg->types[i]->fst_type && (*typepp)->snd_type == tg->types[i]->snd_type) {
+					goto match;
+				}
+				break;
+			default:
+				abort();
+		}
+	}
+	tg->types[i] = *typepp;
+	return;
+
+match:
+	*typepp = tg->types[i];
+}
+
+void
+unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
+	if(store->type == data->type) {
+		switch(store->type) {
+			case '[':
+				if(store->list_type == data->list_type && data->list_type == NULL) {
+					return;
+				}
+				break;
+			case '(':
+				if(store->fst_type == data->fst_type && store->snd_type == data->snd_type) {
+					return;
+				}
+				break;
+		}
+	}
+	fprintf(stderr, "Type unification failed\n");
+	abort();
+}
+
+struct vardecl *
+lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
+	struct vardecl *vd;
+
+	vd = cf->decls;
+	while(vd != NULL) {
+		if(strcmp(vd->name, name) == 0) {
+			return vd;
+		}
+		vd = vd->next;
+	}
+
+	vd = cf->decls;
+	while(vd != NULL) {
+		if(strcmp(vd->name, name) == 0) {
+			return vd;
+		}
+		vd = vd->next;
+	}
+
+	fprintf(stderr, "Variable %s not found\n", name);
+	abort();
+	return NULL;
+}
+
+struct tc_func *
+lookup_function(struct tc_globals *tg, const char *name) {
+	struct tc_func *f;
+
+	f = tg->funcs;
+	while(f != NULL) {
+		if(strcmp(f->name, name) == 0) {
+			return f;
+		}
+		f = f->next;
+	}
+
+	fprintf(stderr, "Function %s not found\n", name);
+	abort();
+	return NULL;
 }
 
 DESCEND_FUNC(vardecl) {
-	struct type *type;
+	struct vardecl *vd = malloc(sizeof(struct vardecl));
+	synt_tree *chld = t->fst_child;
+	struct type datatype;
 
-	tc_descend(tg, t->fst_child->rule, t->fst_child, &type);
+	vd->next = NULL;
+	tc_descend(tg, chld->rule, chld, &vd->type);
+	chld = chld->next;
+	assert(chld->token->type == T_WORD);
+	vd->name = chld->token->value.sval;
+	chld = chld->next;
+	assert(chld->token->type == '=');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	unify_types(tg, vd->type, &datatype);
+	vd->initial = chld;
+	chld = chld->next;
+	assert(chld->token->type == ';');
+
+	if(arg != NULL) {
+		struct tc_func *fdata = arg;
+		*fdata->decls_last = vd;
+		fdata->decls_last = &vd->next;
+	} else {
+		*tg->decls_last = vd;
+		tg->decls_last = &vd->next;
+	}
+}
+
+DESCEND_FUNC(fargs) {
+	struct tc_func *fdata = arg;
+	struct func_arg *fa = malloc(sizeof(struct vardecl));
+	synt_tree *chld = t->fst_child;
+
+	fa->next = NULL;
+	tc_descend(tg, chld->rule, chld, &fa->type);
+	chld = chld->next;
+	assert(chld->token->type == T_WORD);
+	fa->name = chld->token->value.sval;
+	chld = chld->next;
+	if(chld != NULL) {
+		chld = chld->next;
+		tc_descend(tg, chld->rule, chld, arg);
+	}
+
+	*fdata->args_last = fa;
+	fdata->args_last = &fa->next;
+}
+
+DESCEND_FUNC(rettype) {
+	struct type **typepp = arg;
+
+	if(t->fst_child->type == 1) {
+		tc_descend(tg, t->fst_child->rule, t->fst_child, arg);
+	} else {
+		assert(t->fst_child->token->type == T_VOID);
+		*typepp = malloc(sizeof(struct type));
+		(*typepp)->type = t->fst_child->token->type;
+	}
+}
+
+DESCEND_FUNC(fundecl) {
+	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
+	synt_tree *chld = t->fst_child;
+	tg->curfunc = fdata;
+
+	fdata->args_last = &fdata->args;
+	fdata->decls_last = &fdata->decls;
+	fdata->stmts_last = &fdata->stmts;
+
+	tc_descend(tg, chld->rule, chld, &fdata->returntype);
+	chld = chld->next;
+	assert(chld->token->type == T_WORD);
+	fdata->name = chld->token->value.sval;
+	chld = chld->next;
+	assert(chld->token->type == '(');
+	chld = chld->next;
+	if(chld->type == 1) {
+		tc_descend(tg, chld->rule, chld, fdata);
+		chld = chld->next;
+	}
+	assert(chld->token->type == ')');
+	chld = chld->next;
+	assert(chld->token->type == '{');
+	chld = chld->next;
+	do {
+		// vardecls en stmts
+		tc_descend(tg, chld->rule, chld, fdata);
+		chld = chld->next;
+	} while(chld->token->type != '}');
+
+	*tg->funcs_last = fdata;
+	tg->funcs_last = &fdata->next;
+	tg->curfunc = NULL;
+}
+
+DESCEND_FUNC(if) {
+	struct type datatype;
+	struct type booltype;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_IF);
+	chld = chld->next;
+	assert(chld->token->type == '(');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	booltype.type = T_BOOL;
+	unify_types(tg, &booltype, &datatype);
+	chld = chld->next;
+	assert(chld->token->type == ')');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, arg);
+	chld = chld->next;
+	if(chld != NULL) {
+		assert(chld->token->type == T_ELSE);
+		chld = chld->next;
+		tc_descend(tg, chld->rule, chld, arg);
+	}
+}
+
+DESCEND_FUNC(while) {
+	struct type datatype;
+	struct type booltype;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_WHILE);
+	chld = chld->next;
+	assert(chld->token->type == '(');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	booltype.type = T_BOOL;
+	unify_types(tg, &booltype, &datatype);
+	chld = chld->next;
+	assert(chld->token->type == ')');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, arg);
+}
+
+DESCEND_FUNC(assignment) {
+	struct vardecl *var;
+	struct type datatype;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_WORD);
+	var = lookup_variable(tg, arg, chld->token->value.sval);
+	chld = chld->next;
+	assert(chld->token->type == '=');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	unify_types(tg, var->type, &datatype);
 }
 
 // Always returns an char in arg
@@ -251,12 +522,22 @@ typechecker(synt_tree *t, grammar *gram) {
 	int i;
 	struct tc_globals tg;
 	tg.gram = gram;
-	rule_handlers = malloc(gram->lastrule * sizeof(descend_ft));
+	tg.funcs_last = &tg.funcs;
+	memset(&tg.types, 0, sizeof(tg.types));
+	rule_handlers = malloc((gram->lastrule + 1) * sizeof(descend_ft));
 	for(i = 0; gram->lastrule >= i; i++) {
 		rule_handlers[i] = tc_descend_simple;
 	}
 #define SET_RULE_HANDLER(rulename, func)	rule_handlers[get_id_for_rule(gram, #rulename)] = tc_descend_ ## func;
 	SET_RULE_HANDLER(Decl, parallel); // XXX
 	SET_RULE_HANDLER(Exp, expression);
+	SET_RULE_HANDLER(Type, type);
+	SET_RULE_HANDLER(VarDecl, vardecl);
+	SET_RULE_HANDLER(RetType, rettype);
+	SET_RULE_HANDLER(FunDecl, fundecl);
+	SET_RULE_HANDLER(FArgs, fargs);
+	SET_RULE_HANDLER(If, if);
+	SET_RULE_HANDLER(While, while);
+	SET_RULE_HANDLER(Assignment, assignment);
 	tc_descend(&tg, get_id_for_rule(gram, "S"), t, NULL);
 }
