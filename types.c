@@ -73,7 +73,7 @@ show_type(int indent, struct type *t)
 	case 'a':
 		printf("Anonymous type with scope %s\n", t->scope);
 		return;
-	case T_NUMBER:
+	case T_INT:
 		printf("Integer\n");
 		return;
 	case T_BOOL:
@@ -393,7 +393,7 @@ DESCEND_FUNC(expression_simple) {
 		res->type = T_NUMBER;
 		return;
 	case T_NUMBER:
-		res->type = T_NUMBER;
+		res->type = T_INT;
 		return;
 	case T_FALSE:
 	case T_TRUE:
