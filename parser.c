@@ -26,8 +26,6 @@ main(int argc, char **argv) {
 	if(!parser(g, gram, &t, e)) {
 		return 1;
 	}
-	printf("Syntax tree:\n");
-	show_synt_tree(t, 0, gram);
 
 	typechecker(t, gram);
 
