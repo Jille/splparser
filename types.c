@@ -62,7 +62,7 @@ show_type(int indent, struct type *t)
 	printf("Type: ");
 	switch(t->type) {
 	case '[':
-		if(t->list_type == 0) {
+		if(t->list_type == NULL) {
 			printf("Empty list of any type\n");
 		} else {
 			printf("List of type:\n");
@@ -141,7 +141,7 @@ DESCEND_FUNC(type) {
 
 	int i;
 	for(i = 0; tg->types[i] != NULL; i++) {
-		assert(i < 2000 /* static allocated buffer overflow */);
+		assert(i < sizeof(tg->types) / sizeof(struct type *) /* static allocated buffer overflow */);
 		if((*typepp)->type != tg->types[i]->type) {
 			continue;
 		}
@@ -449,7 +449,7 @@ DESCEND_FUNC(funcall) {
 // Always returns an char in arg
 DESCEND_FUNC(expression_simple) {
 	assert(t->type == 0);
-	assert(arg != 0);
+	assert(arg != NULL);
 
 	struct type *res = (struct type*)arg;
 
@@ -477,13 +477,13 @@ DESCEND_FUNC(expression_simple) {
 DESCEND_FUNC(expression) {
 	// XXX split this function into some smaller parts for Exp[23456]
 	assert(t->type == 1);
-	assert(t->fst_child != 0);
-	assert(arg != 0);
+	assert(t->fst_child != NULL);
+	assert(arg != NULL);
 
 	struct type *res = (struct type*)arg;
 
 	// If we have only one child, simply return its type
-	if(t->fst_child->next == 0) {
+	if(t->fst_child->next == NULL) {
 		if(t->fst_child->type == 0)
 			tc_descend_expression_simple(tg, t->fst_child, arg);
 		else {
@@ -502,14 +502,14 @@ DESCEND_FUNC(expression) {
 	if(t->fst_child->type == 0) {
 		switch(t->fst_child->token->type) {
 		case '!': // Boolean negation: Bool -> Bool
-			assert(t->fst_child->next->next == 0);
+			assert(t->fst_child->next->next == NULL);
 			tc_descend_expression(tg, t->fst_child->next, arg);
 			if(res->type != T_BOOL)
 				PARSING_FAIL("Boolean negation (!) works only on booleans");
 			res->type = T_BOOL;
 			return;
 		case '-': // Numeric negation: Int -> Int
-			assert(t->fst_child->next->next == 0);
+			assert(t->fst_child->next->next == NULL);
 			tc_descend_expression(tg, t->fst_child->next, arg);
 			if(res->type != T_INT)
 				PARSING_FAIL("Numeric negation (-) works only on integers");
@@ -518,10 +518,10 @@ DESCEND_FUNC(expression) {
 		case '[': // Empty list
 			assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ']');
 			res->type = '[';
-			res->list_type = 0;
+			res->list_type = NULL;
 			return;
 		case '(':
-			if(t->fst_child->next->next->next == 0) { // Exp within braces
+			if(t->fst_child->next->next->next == NULL) { // Exp within braces
 				assert(t->fst_child->next->next->token->type == ')');
 				tc_descend_expression(tg, t->fst_child->next, arg);
 			} else { // Tuple
@@ -596,13 +596,13 @@ DESCEND_FUNC(expression) {
 }
 
 DESCEND_FUNC(return) {
-	assert(arg != 0);
+	assert(arg != NULL);
 	assert(t->fst_child->type == 0 && t->fst_child->token->type == T_RETURN);
-	assert(t->fst_child->next->next == 0 || t->fst_child->next->next->next == 0);
+	assert(t->fst_child->next->next == NULL || t->fst_child->next->next->next == NULL);
 
 	struct tc_func *tc = arg;
 	struct type newtype;
-	if(t->fst_child->next->next == 0) {
+	if(t->fst_child->next->next == NULL) {
 		assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ';');
 		newtype.type = T_VOID;
 	} else {
