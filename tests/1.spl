@@ -1,4 +1,0 @@
-Int
-helloworld() {
-	Int ret = 5;
-}
