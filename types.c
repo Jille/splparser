@@ -141,7 +141,7 @@ DESCEND_FUNC(type) {
 
 	int i;
 	for(i = 0; tg->types[i] != NULL; i++) {
-		assert(i < 2000 /* static allocated buffer overflow */);
+		assert(i < sizeof(tg->types) / sizeof(struct type *) /* static allocated buffer overflow */);
 		if((*typepp)->type != tg->types[i]->type) {
 			continue;
 		}
