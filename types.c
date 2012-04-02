@@ -543,13 +543,14 @@ DESCEND_FUNC(expression) {
 
 	// First literal is an Expression. From now on, types are dictated
 	// by the operators in between; check them here.
-	assert(t->fst_child->next->type == 0);
+	assert(t->fst_child->next->type == 0 || t->fst_child->next->fst_child->type == 0);
 	assert(t->fst_child->next->next->next == 0);
 	struct type fst, snd;
 	tc_descend_expression(tg, t->fst_child, &fst);
 	tc_descend_expression(tg, t->fst_child->next->next, &snd);
 
-	switch(t->fst_child->next->token->type) {
+	char token = t->fst_child->next->type != 0 ? t->fst_child->next->fst_child->token->type : t->fst_child->next->token->type;
+	switch(token) {
 	// Numeric comparison operators
 	case '<': case '>': case T_LTE: case T_GTE:
 		if(fst.type != T_INT || snd.type != T_INT)
