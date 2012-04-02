@@ -7,6 +7,7 @@
 #include "prototypes.h"
 #include "grammar.h"
 #include "parser.h"
+#include "types.h"
 
 // #define VERBOSE_PARSER_DEBUG
 
@@ -30,8 +31,6 @@ main(int argc, char **argv) {
 	if(!parser(g, gram, &t, e)) {
 		return 1;
 	}
-	printf("Syntax tree:\n");
-	show_synt_tree(t, 0, gram);
 
 	typechecker(t, gram);
 
