@@ -88,9 +88,7 @@ void
 tc_descend(struct tc_globals *tg, int rule, synt_tree *t, void *arg) {
 	assert(t->type == 1);
 	assert(rule == t->rule); // XXX argument rule kan weg.
-	printf("Enter %s\n", tg->gram->rules[rule].name);
 	rule_handlers[rule](tg, t, arg);
-	printf("Leave %s\n", tg->gram->rules[rule].name);
 }
 
 DESCEND_FUNC(simple) {
