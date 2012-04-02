@@ -38,6 +38,9 @@ struct tc_globals {
 	struct tc_func **funcs_last;
 	struct vardecl *decls;
 	struct vardecl **decls_last;
+
+	// Temporary hack
+	struct tc_func *curfunc;
 };
 
 #define DESCEND_ARGS struct tc_globals *tg, synt_tree *t, void *arg
@@ -127,9 +130,55 @@ match:
 	*typepp = tg->types[i];
 }
 
+void
+unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
+	if(store->type == data->type) {
+		switch(store->type) {
+			case '[':
+				if(store->list_type == data->list_type && data->list_type == NULL) {
+					return;
+				}
+				break;
+			case '(':
+				if(store->fst_type == data->fst_type && store->snd_type == data->snd_type) {
+					return;
+				}
+				break;
+		}
+	}
+	fprintf(stderr, "Type unification failed\n");
+	abort();
+}
+
+struct vardecl *
+lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
+	struct vardecl *vd;
+
+	vd = cf->decls;
+	while(vd != NULL) {
+		if(strcmp(vd->name, name) == 0) {
+			return vd;
+		}
+		vd = vd->next;
+	}
+
+	vd = cf->decls;
+	while(vd != NULL) {
+		if(strcmp(vd->name, name) == 0) {
+			return vd;
+		}
+		vd = vd->next;
+	}
+
+	fprintf(stderr, "Variable %s not found\n", name);
+	abort();
+	return NULL;
+}
+
 DESCEND_FUNC(vardecl) {
 	struct vardecl *vd = malloc(sizeof(struct vardecl));
 	synt_tree *chld = t->fst_child;
+	struct type datatype;
 
 	vd->next = NULL;
 	tc_descend(tg, chld->rule, chld, &vd->type);
@@ -139,6 +188,8 @@ DESCEND_FUNC(vardecl) {
 	chld = chld->next;
 	assert(chld->token->type == '=');
 	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	unify_types(tg, vd->type, &datatype);
 	vd->initial = chld;
 	chld = chld->next;
 	assert(chld->token->type == ';');
@@ -188,6 +239,7 @@ DESCEND_FUNC(rettype) {
 DESCEND_FUNC(fundecl) {
 	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
 	synt_tree *chld = t->fst_child;
+	tg->curfunc = fdata;
 
 	fdata->args_last = &fdata->args;
 	fdata->decls_last = &fdata->decls;
@@ -216,6 +268,63 @@ DESCEND_FUNC(fundecl) {
 
 	*tg->funcs_last = fdata;
 	tg->funcs_last = &fdata->next;
+	tg->curfunc = NULL;
+}
+
+DESCEND_FUNC(if) {
+	struct type datatype;
+	struct type booltype;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_IF);
+	chld = chld->next;
+	assert(chld->token->type == '(');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	booltype.type = T_BOOL;
+	unify_types(tg, &booltype, &datatype);
+	chld = chld->next;
+	assert(chld->token->type == ')');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, arg);
+	chld = chld->next;
+	if(chld != NULL) {
+		assert(chld->token->type == T_ELSE);
+		chld = chld->next;
+		tc_descend(tg, chld->rule, chld, arg);
+	}
+}
+
+DESCEND_FUNC(while) {
+	struct type datatype;
+	struct type booltype;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_WHILE);
+	chld = chld->next;
+	assert(chld->token->type == '(');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	booltype.type = T_BOOL;
+	unify_types(tg, &booltype, &datatype);
+	chld = chld->next;
+	assert(chld->token->type == ')');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, arg);
+}
+
+DESCEND_FUNC(assignment) {
+	struct vardecl *var;
+	struct type datatype;
+	synt_tree *chld = t->fst_child;
+
+	assert(chld->token->type == T_WORD);
+	var = lookup_variable(tg, arg, chld->token->value.sval);
+	chld = chld->next;
+	assert(chld->token->type == '=');
+	chld = chld->next;
+	tc_descend(tg, chld->rule, chld, &datatype);
+	unify_types(tg, var->type, &datatype);
 }
 
 void
@@ -234,8 +343,10 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Type, type);
 	SET_RULE_HANDLER(VarDecl, vardecl);
 	SET_RULE_HANDLER(RetType, rettype);
-	SET_RULE_HANDLER(RetType, rettype);
 	SET_RULE_HANDLER(FunDecl, fundecl);
 	SET_RULE_HANDLER(FArgs, fargs);
+	SET_RULE_HANDLER(If, if);
+	SET_RULE_HANDLER(While, while);
+	SET_RULE_HANDLER(Assignment, assignment);
 	tc_descend(&tg, get_id_for_rule(gram, "S"), t, NULL);
 }
