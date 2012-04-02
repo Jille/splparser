@@ -20,6 +20,10 @@ struct func_arg {
 	struct type *type;
 	struct func_arg *next;
 };
+struct variable {
+	char *name;
+	struct type *type;
+};
 struct tc_func {
 	struct type *returntype;
 	char *name;
@@ -186,28 +190,45 @@ unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
 	abort();
 }
 
-struct vardecl *
+struct variable *
 lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 	struct vardecl *vd;
+	struct func_arg *fa;
+	struct variable *var = malloc(sizeof(struct variable));
 
 	vd = cf->decls;
 	while(vd != NULL) {
 		if(strcmp(vd->name, name) == 0) {
-			return vd;
+			var->name = vd->name;
+			var->type = vd->type;
+			return var;
 		}
 		vd = vd->next;
 	}
 
-	vd = cf->decls;
+	fa = cf->args;
+	while(fa != NULL) {
+		if(strcmp(fa->name, name) == 0) {
+			var->name = fa->name;
+			var->type = fa->type;
+			return var;
+		}
+		fa = fa->next;
+	}
+
+	vd = tg->decls;
 	while(vd != NULL) {
 		if(strcmp(vd->name, name) == 0) {
-			return vd;
+			var->name = vd->name;
+			var->type = vd->type;
+			return var;
 		}
 		vd = vd->next;
 	}
 
 	fprintf(stderr, "Variable %s not found\n", name);
 	abort();
+	free(var);
 	return NULL;
 }
 
@@ -369,7 +390,7 @@ DESCEND_FUNC(while) {
 }
 
 DESCEND_FUNC(assignment) {
-	struct vardecl *var;
+	struct variable *var;
 	struct type datatype;
 	synt_tree *chld = t->fst_child;
 
@@ -380,6 +401,7 @@ DESCEND_FUNC(assignment) {
 	chld = chld->next;
 	tc_descend(tg, chld->rule, chld, &datatype);
 	unify_types(tg, var->type, &datatype);
+	free(var);
 }
 
 DESCEND_FUNC(funcall) {
@@ -433,9 +455,11 @@ DESCEND_FUNC(expression_simple) {
 
 	switch(t->token->type) {
 	case T_WORD: {
-		struct vardecl *decl = lookup_variable(tg, tg->curfunc, t->token->value.sval);
-		memcpy(res, decl->type, sizeof(struct type)); }
+		struct variable *var = lookup_variable(tg, tg->curfunc, t->token->value.sval);
+		memcpy(res, var->type, sizeof(struct type));
+		free(var);
 		return;
+	}
 	case T_NUMBER:
 		res->type = T_INT;
 		return;
