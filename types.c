@@ -113,6 +113,18 @@ DESCEND_FUNC(parallel) {
 	tc_descend_simple(tg, t, arg);
 }
 
+DESCEND_FUNC(rettype) {
+	struct type **typepp = arg;
+
+	if(t->fst_child->type == 1) {
+		tc_descend(tg, t->fst_child, arg);
+	} else {
+		assert(t->fst_child->token->type == T_VOID);
+		*typepp = malloc(sizeof(struct type));
+		(*typepp)->type = t->fst_child->token->type;
+	}
+}
+
 DESCEND_FUNC(type) {
 	struct type **typepp = arg;
 	synt_tree *fc = t->fst_child;
@@ -190,6 +202,7 @@ match:
 	*typepp = ts;
 }
 
+// XXX naar boven verplaatsen
 void
 unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
 	if(store->type == data->type) {
@@ -323,18 +336,6 @@ DESCEND_FUNC(fargs) {
 
 	*fdata->args_last = fa;
 	fdata->args_last = &fa->next;
-}
-
-DESCEND_FUNC(rettype) {
-	struct type **typepp = arg;
-
-	if(t->fst_child->type == 1) {
-		tc_descend(tg, t->fst_child, arg);
-	} else {
-		assert(t->fst_child->token->type == T_VOID);
-		*typepp = malloc(sizeof(struct type));
-		(*typepp)->type = t->fst_child->token->type;
-	}
 }
 
 DESCEND_FUNC(fundecl) {
