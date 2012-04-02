@@ -5,7 +5,7 @@ FunDecl := RetType T_WORD '(' FArgs ')' '{' Stmt+ '}' | RetType T_WORD '(' ')' '
 RetType := Type | T_VOID
 Type := T_INT | T_BOOL | '(' Type ',' Type ')' | '[' Type ']' | T_WORD
 FArgs := Type T_WORD | Type T_WORD ',' FArgs
-Stmt := '{' '}' | '{' Stmt+ '}' | T_IF '(' Exp ')' Stmt T_ELSE Stmt | T_IF '(' Exp ')' Stmt | T_WHILE '(' Exp ')' Stmt | T_WORD '=' Exp ';' | FunCall ';' | T_RETURN Exp ';'
+Stmt := '{' '}' | '{' Stmt+ '}' | T_IF '(' Exp ')' Stmt T_ELSE Stmt | T_IF '(' Exp ')' Stmt | T_WHILE '(' Exp ')' Stmt | T_WORD '=' Exp ';' | FunCall ';' | T_RETURN Exp ';' | T_RETURN ';'
 # Exp := T_WORD Exp' | Op1 Exp Exp' | T_NUMBER Exp' | T_FALSE Exp' | T_TRUE Exp' | '(' Exp ')' Exp' | FunCall Exp' | '[' ']' Exp' | '(' Exp ',' Exp ')' Exp' | T_WORD | Op1 Exp | T_NUMBER | T_FALSE | T_TRUE | '(' Exp ')' | FunCall | '[' ']' | '(' Exp ',' Exp ')'
 # Exp' := Exp Op2 Exp | T_WORD | Op1 Exp | T_NUMBER | T_FALSE | T_TRUE | '(' Exp ')' | FunCall | '[' ']' | '(' Exp ',' Exp ')'
 FunCall := T_WORD '(' ')' | T_WORD '(' ActArgs ')'

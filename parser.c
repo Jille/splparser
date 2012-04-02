@@ -28,11 +28,14 @@ main(int argc, char **argv) {
 	printf("Syntax tree:\n");
 	show_synt_tree(t, 0, gram);
 
+	typechecker(t, gram);
+
 	printf("Pretty print:\n");
 	struct pretty_print_state state = {0, 0};
 	pretty_print(t, &state, gram);
 
 	free(t);
+	lazyarray_destroy(g);
 	return 0;
 }
 
