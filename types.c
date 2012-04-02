@@ -91,6 +91,92 @@ show_type(int indent, struct type *t)
 }
 
 void
+unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
+	if(store->type == data->type) {
+		switch(store->type) {
+			case '[':
+				if(data->list_type == NULL) {
+					return;
+				}
+				unify_types(tg, store->list_type, data->list_type);
+				break;
+			case '(':
+				unify_types(tg, store->fst_type, data->fst_type);
+				unify_types(tg, store->snd_type, data->snd_type);
+				break;
+			case T_WORD:
+				if(strcmp(store->pm_name, data->pm_name) != 0) {
+					goto failed;
+				}
+				break;
+		}
+		return;
+	}
+failed:
+	fprintf(stderr, "Type unification failed\n");
+	abort();
+}
+
+struct variable *
+lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
+	struct vardecl *vd;
+	struct func_arg *fa;
+	struct variable *var = malloc(sizeof(struct variable));
+
+	vd = cf->decls;
+	while(vd != NULL) {
+		if(strcmp(vd->name, name) == 0) {
+			var->name = vd->name;
+			var->type = vd->type;
+			return var;
+		}
+		vd = vd->next;
+	}
+
+	fa = cf->args;
+	while(fa != NULL) {
+		if(strcmp(fa->name, name) == 0) {
+			var->name = fa->name;
+			var->type = fa->type;
+			return var;
+		}
+		fa = fa->next;
+	}
+
+	vd = tg->decls;
+	while(vd != NULL) {
+		if(strcmp(vd->name, name) == 0) {
+			var->name = vd->name;
+			var->type = vd->type;
+			return var;
+		}
+		vd = vd->next;
+	}
+
+	fprintf(stderr, "Variable %s not found\n", name);
+	abort();
+	free(var);
+	return NULL;
+}
+
+struct tc_func *
+lookup_function(struct tc_globals *tg, const char *name) {
+	struct tc_func *f;
+
+	f = tg->funcs;
+	while(f != NULL) {
+		if(strcmp(f->name, name) == 0) {
+			return f;
+		}
+		f = f->next;
+	}
+
+	fprintf(stderr, "Function %s not found\n", name);
+	abort();
+	return NULL;
+}
+
+void
 tc_descend(struct tc_globals *tg, synt_tree *t, void *arg) {
 	assert(t->type == 1);
 	rule_handlers[t->rule](tg, t, arg);
@@ -200,93 +286,6 @@ DESCEND_FUNC(type) {
 match:
 	free(*typepp);
 	*typepp = ts;
-}
-
-// XXX naar boven verplaatsen
-void
-unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
-	if(store->type == data->type) {
-		switch(store->type) {
-			case '[':
-				if(data->list_type == NULL) {
-					return;
-				}
-				unify_types(tg, store->list_type, data->list_type);
-				break;
-			case '(':
-				unify_types(tg, store->fst_type, data->fst_type);
-				unify_types(tg, store->snd_type, data->snd_type);
-				break;
-			case T_WORD:
-				if(strcmp(store->pm_name, data->pm_name) != 0) {
-					goto failed;
-				}
-				break;
-		}
-		return;
-	}
-failed:
-	fprintf(stderr, "Type unification failed\n");
-	abort();
-}
-
-struct variable *
-lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
-	struct vardecl *vd;
-	struct func_arg *fa;
-	struct variable *var = malloc(sizeof(struct variable));
-
-	vd = cf->decls;
-	while(vd != NULL) {
-		if(strcmp(vd->name, name) == 0) {
-			var->name = vd->name;
-			var->type = vd->type;
-			return var;
-		}
-		vd = vd->next;
-	}
-
-	fa = cf->args;
-	while(fa != NULL) {
-		if(strcmp(fa->name, name) == 0) {
-			var->name = fa->name;
-			var->type = fa->type;
-			return var;
-		}
-		fa = fa->next;
-	}
-
-	vd = tg->decls;
-	while(vd != NULL) {
-		if(strcmp(vd->name, name) == 0) {
-			var->name = vd->name;
-			var->type = vd->type;
-			return var;
-		}
-		vd = vd->next;
-	}
-
-	fprintf(stderr, "Variable %s not found\n", name);
-	abort();
-	free(var);
-	return NULL;
-}
-
-struct tc_func *
-lookup_function(struct tc_globals *tg, const char *name) {
-	struct tc_func *f;
-
-	f = tg->funcs;
-	while(f != NULL) {
-		if(strcmp(f->name, name) == 0) {
-			return f;
-		}
-		f = f->next;
-	}
-
-	fprintf(stderr, "Function %s not found\n", name);
-	abort();
-	return NULL;
 }
 
 DESCEND_FUNC(vardecl) {
