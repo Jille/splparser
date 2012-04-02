@@ -89,10 +89,9 @@ show_type(int indent, struct type *t)
 }
 
 void
-tc_descend(struct tc_globals *tg, int rule, synt_tree *t, void *arg) {
+tc_descend(struct tc_globals *tg, synt_tree *t, void *arg) {
 	assert(t->type == 1);
-	assert(rule == t->rule); // XXX argument rule kan weg.
-	rule_handlers[rule](tg, t, arg);
+	rule_handlers[t->rule](tg, t, arg);
 }
 
 DESCEND_FUNC(simple) {
@@ -101,7 +100,7 @@ DESCEND_FUNC(simple) {
 	chld = t->fst_child;
 	while(chld != NULL) {
 		if(chld->type == 1) {
-			tc_descend(tg, chld->rule, chld, arg);
+			tc_descend(tg, chld, arg);
 		}
 		chld = chld->next;
 	}
@@ -255,14 +254,14 @@ DESCEND_FUNC(vardecl) {
 	struct type datatype;
 
 	vd->next = NULL;
-	tc_descend(tg, chld->rule, chld, &vd->type);
+	tc_descend(tg, chld, &vd->type);
 	chld = chld->next;
 	assert(chld->token->type == T_WORD);
 	vd->name = chld->token->value.sval;
 	chld = chld->next;
 	assert(chld->token->type == '=');
 	chld = chld->next;
-	tc_descend(tg, chld->rule, chld, &datatype);
+	tc_descend(tg, chld, &datatype);
 	unify_types(tg, vd->type, &datatype);
 	vd->initial = chld;
 	chld = chld->next;
@@ -284,14 +283,14 @@ DESCEND_FUNC(fargs) {
 	synt_tree *chld = t->fst_child;
 
 	fa->next = NULL;
-	tc_descend(tg, chld->rule, chld, &fa->type);
+	tc_descend(tg, chld, &fa->type);
 	chld = chld->next;
 	assert(chld->token->type == T_WORD);
 	fa->name = chld->token->value.sval;
 	chld = chld->next;
 	if(chld != NULL) {
 		chld = chld->next;
-		tc_descend(tg, chld->rule, chld, arg);
+		tc_descend(tg, chld, arg);
 	}
 
 	*fdata->args_last = fa;
@@ -302,7 +301,7 @@ DESCEND_FUNC(rettype) {
 	struct type **typepp = arg;
 
 	if(t->fst_child->type == 1) {
-		tc_descend(tg, t->fst_child->rule, t->fst_child, arg);
+		tc_descend(tg, t->fst_child, arg);
 	} else {
 		assert(t->fst_child->token->type == T_VOID);
 		*typepp = malloc(sizeof(struct type));
@@ -319,7 +318,7 @@ DESCEND_FUNC(fundecl) {
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
 
-	tc_descend(tg, chld->rule, chld, &fdata->returntype);
+	tc_descend(tg, chld, &fdata->returntype);
 	chld = chld->next;
 	assert(chld->token->type == T_WORD);
 	fdata->name = chld->token->value.sval;
@@ -327,7 +326,7 @@ DESCEND_FUNC(fundecl) {
 	assert(chld->token->type == '(');
 	chld = chld->next;
 	if(chld->type == 1) {
-		tc_descend(tg, chld->rule, chld, fdata);
+		tc_descend(tg, chld, fdata);
 		chld = chld->next;
 	}
 	assert(chld->token->type == ')');
@@ -340,7 +339,7 @@ DESCEND_FUNC(fundecl) {
 
 	do {
 		// vardecls en stmts
-		tc_descend(tg, chld->rule, chld, fdata);
+		tc_descend(tg, chld, fdata);
 		chld = chld->next;
 	} while(chld->token->type != '}');
 
@@ -356,18 +355,18 @@ DESCEND_FUNC(if) {
 	chld = chld->next;
 	assert(chld->token->type == '(');
 	chld = chld->next;
-	tc_descend(tg, chld->rule, chld, &datatype);
+	tc_descend(tg, chld, &datatype);
 	booltype.type = T_BOOL;
 	unify_types(tg, &booltype, &datatype);
 	chld = chld->next;
 	assert(chld->token->type == ')');
 	chld = chld->next;
-	tc_descend(tg, chld->rule, chld, arg);
+	tc_descend(tg, chld, arg);
 	chld = chld->next;
 	if(chld != NULL) {
 		assert(chld->token->type == T_ELSE);
 		chld = chld->next;
-		tc_descend(tg, chld->rule, chld, arg);
+		tc_descend(tg, chld, arg);
 	}
 }
 
@@ -380,13 +379,13 @@ DESCEND_FUNC(while) {
 	chld = chld->next;
 	assert(chld->token->type == '(');
 	chld = chld->next;
-	tc_descend(tg, chld->rule, chld, &datatype);
+	tc_descend(tg, chld, &datatype);
 	booltype.type = T_BOOL;
 	unify_types(tg, &booltype, &datatype);
 	chld = chld->next;
 	assert(chld->token->type == ')');
 	chld = chld->next;
-	tc_descend(tg, chld->rule, chld, arg);
+	tc_descend(tg, chld, arg);
 }
 
 DESCEND_FUNC(assignment) {
@@ -399,7 +398,7 @@ DESCEND_FUNC(assignment) {
 	chld = chld->next;
 	assert(chld->token->type == '=');
 	chld = chld->next;
-	tc_descend(tg, chld->rule, chld, &datatype);
+	tc_descend(tg, chld, &datatype);
 	unify_types(tg, var->type, &datatype);
 	free(var);
 }
@@ -419,7 +418,7 @@ DESCEND_FUNC(funcall) {
 
 		while(fa != NULL) {
 			struct type datatype;
-			tc_descend(tg, henk->rule, henk, &datatype);
+			tc_descend(tg, henk, &datatype);
 			unify_types(tg, fa->type, &datatype);
 			fa = fa->next;
 			if(henk->next == NULL) {
@@ -637,5 +636,5 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Assignment, assignment);
 	SET_RULE_HANDLER(FunCall, funcall);
 	SET_RULE_HANDLER(Return, return);
-	tc_descend(&tg, get_id_for_rule(gram, "S"), t, NULL);
+	tc_descend(&tg, t, NULL);
 }
