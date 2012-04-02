@@ -390,10 +390,9 @@ DESCEND_FUNC(expression_simple) {
 	struct type *res = (struct type*)arg;
 
 	switch(t->token->type) {
-	case T_WORD:
-		// TODO: ask symbol table what the type of this variable is
-		fprintf(stderr, "TODO: ask symbol table what type of this variable is\n");
-		res->type = T_NUMBER;
+	case T_WORD: {
+		struct vardecl *decl = lookup_variable(tg, tg->curfunc, t->token->value.sval);
+		memcpy(res, decl->type, sizeof(struct type)); }
 		return;
 	case T_NUMBER:
 		res->type = T_INT;
