@@ -116,7 +116,7 @@ DESCEND_FUNC(type) {
 	struct type **typepp = arg;
 	synt_tree *fc = t->fst_child;
 	assert(t->type == 1);
-	assert(fc->type == NULL);
+	assert(fc->type == 0);
 	*typepp = malloc(sizeof(struct type));
 	(*typepp)->type = fc->token->type;
 	switch(fc->token->type) {
@@ -126,13 +126,13 @@ DESCEND_FUNC(type) {
 			break;
 		case '(':
 			tc_descend_type(tg, fc->next, &(*typepp)->fst_type);
-			assert(fc->next->next->type == NULL && fc->next->next->token->type == ',');
+			assert(fc->next->next->type == 0 && fc->next->next->token->type == ',');
 			tc_descend_type(tg, fc->next->next->next, &(*typepp)->snd_type);
-			assert(fc->next->next->next->next->type == NULL && fc->next->next->next->next->token->type == ')');
+			assert(fc->next->next->next->next->type == 0 && fc->next->next->next->next->token->type == ')');
 			break;
 		case '[':
 			tc_descend_type(tg, fc->next, &(*typepp)->list_type);
-			assert(fc->next->next->type == NULL && fc->next->next->token->type == ']');
+			assert(fc->next->next->type == 0 && fc->next->next->token->type == ']');
 			break;
 		default:
 			fprintf(stderr, "Unexpected token in type declaration\n");
@@ -448,7 +448,7 @@ DESCEND_FUNC(funcall) {
 
 // Always returns an char in arg
 DESCEND_FUNC(expression_simple) {
-	assert(t->type == NULL);
+	assert(t->type == 0);
 	assert(arg != NULL);
 
 	struct type *res = (struct type*)arg;
