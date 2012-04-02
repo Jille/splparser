@@ -170,14 +170,14 @@ unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
 	if(store->type == data->type) {
 		switch(store->type) {
 			case '[':
-				if(store->list_type == data->list_type && data->list_type == NULL) {
+				if(data->list_type == NULL) {
 					return;
 				}
+				unify_types(tg, store->list_type, data->list_type);
 				break;
 			case '(':
-				if(store->fst_type == data->fst_type && store->snd_type == data->snd_type) {
-					return;
-				}
+				unify_types(tg, store->fst_type, data->fst_type);
+				unify_types(tg, store->snd_type, data->snd_type);
 				break;
 		}
 	}
