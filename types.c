@@ -175,6 +175,23 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 	return NULL;
 }
 
+struct tc_func *
+lookup_function(struct tc_globals *tg, const char *name) {
+	struct tc_func *f;
+
+	f = tg->funcs;
+	while(f != NULL) {
+		if(strcmp(f->name, name) == 0) {
+			return f;
+		}
+		f = f->next;
+	}
+
+	fprintf(stderr, "Function %s not found\n", name);
+	abort();
+	return NULL;
+}
+
 DESCEND_FUNC(vardecl) {
 	struct vardecl *vd = malloc(sizeof(struct vardecl));
 	synt_tree *chld = t->fst_child;
