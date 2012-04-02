@@ -29,8 +29,12 @@ main(int argc, char **argv) {
 	synt_error *e = create_synt_error();
 	synt_tree *t;
 	if(!parser(g, gram, &t, e)) {
+		printf("Failed to parse, error on line %d: %s\n", e->row, e->error);
 		return 1;
 	}
+
+	printf("Syntax tree:\n");
+	show_synt_tree(t, 0, gram);
 
 	typechecker(t, gram);
 
@@ -165,16 +169,15 @@ ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e)
 #ifdef VERBOSE_PARSER_DEBUG
 			printf("Shifted %s\n", token_to_string(t->type));
 #endif
-			// fprintf(stderr, "parser(): > expected literal %s, read %s\n", token_to_string(a->branch->token), token_to_string(t->type));
 			*a->tree = malloc(sizeof(synt_tree));
 			(*a->tree)->type = 0;
 			(*a->tree)->token = t;
 			(*a->tree)->next = NULL;
 			a->tree = &(*a->tree)->next;
 			if(a->branch->token != t->type) {
-				// TODO better error
-				// TODO: unshift generator
-				update_synt_error(e, "Expected literal, read other literal", t->lineno, 0);
+				char *buf;
+				asprintf(&buf, "parser(%d): expected literal %s, read %s\n", t->lineno, token_to_string(a->branch->token), token_to_string(t->type));
+				update_synt_error(e, buf, t->lineno, 0);
 				a->inputidx--;
 				// printf("Unshifted %s\n", token_to_string(t->type));
 				// generator_unshift(gen, t);
