@@ -34,11 +34,12 @@ struct tc_func {
 	struct vardecl **decls_last;
 	synt_tree **stmts_last;
 	struct tc_func *next;
+	struct type *pm_types;
 };
 struct tc_globals {
 	grammar *gram;
 	int funcall_rule;
-	struct type *types[2000];
+	struct type *types;
 	struct tc_func *funcs;
 	struct tc_func **funcs_last;
 	struct vardecl *decls;
@@ -75,8 +76,8 @@ show_type(int indent, struct type *t)
 		show_type(indent + 1, t->fst_type);
 		show_type(indent + 1, t->snd_type);
 		return;
-	case 'a':
-		printf("Anonymous type with scope %s\n", t->scope);
+	case T_WORD:
+		printf("Anonymous type with name %s\n", t->pm_name);
 		return;
 	case T_INT:
 		printf("Integer\n");
@@ -134,40 +135,59 @@ DESCEND_FUNC(type) {
 			tc_descend_type(tg, fc->next, &(*typepp)->list_type);
 			assert(fc->next->next->type == 0 && fc->next->next->token->type == ']');
 			break;
+		case T_WORD:
+			(*typepp)->pm_name = fc->token->value.sval;
+			break;
 		default:
 			fprintf(stderr, "Unexpected token in type declaration\n");
 			abort();
 	}
 
-	int i;
-	for(i = 0; tg->types[i] != NULL; i++) {
-		assert(i < sizeof(tg->types) / sizeof(struct type *) /* static allocated buffer overflow */);
-		if((*typepp)->type != tg->types[i]->type) {
-			continue;
-		}
-		switch(tg->types[i]->type) {
-			case T_INT:
-			case T_BOOL:
+	struct type *ts;
+	if(fc->token->type == T_WORD) {
+		struct tc_func *fdata = tg->curfunc;
+		ts = fdata->pm_types;
+		while(ts != NULL) {
+			assert(ts->type == T_WORD);
+			if(strcmp(ts->pm_name, (*typepp)->pm_name) == 0) {
 				goto match;
-			case '[':
-				if((*typepp)->list_type == tg->types[i]->list_type) {
-					goto match;
-				}
-				break;
-			case '(':
-				if((*typepp)->fst_type == tg->types[i]->fst_type && (*typepp)->snd_type == tg->types[i]->snd_type) {
-					goto match;
-				}
-				break;
-			default:
-				abort();
+			}
+			ts = ts->next;
 		}
+		(*typepp)->next = fdata->pm_types;
+		fdata->pm_types = *typepp;
+	} else {
+		ts = tg->types;
+		while(ts != NULL) {
+			if((*typepp)->type == ts->type) {
+				switch(ts->type) {
+					case T_INT:
+					case T_BOOL:
+						goto match;
+					case '[':
+						if((*typepp)->list_type == ts->list_type) {
+							goto match;
+						}
+						break;
+					case '(':
+						if((*typepp)->fst_type == ts->fst_type && (*typepp)->snd_type == ts->snd_type) {
+							goto match;
+						}
+						break;
+					default:
+						abort();
+				}
+			}
+			ts = ts->next;
+		}
+		(*typepp)->next = tg->types;
+		tg->types = *typepp;
 	}
-	tg->types[i] = *typepp;
 	return;
 
 match:
-	*typepp = tg->types[i];
+	free(*typepp);
+	*typepp = ts;
 }
 
 void
@@ -183,9 +203,16 @@ unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
 			case '(':
 				unify_types(tg, store->fst_type, data->fst_type);
 				unify_types(tg, store->snd_type, data->snd_type);
+				break;
+			case T_WORD:
+				if(strcmp(store->pm_name, data->pm_name) != 0) {
+					goto failed;
+				}
+				break;
 		}
 		return;
 	}
+failed:
 	fprintf(stderr, "Type unification failed\n");
 	abort();
 }
