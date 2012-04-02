@@ -6,6 +6,7 @@
 #include "prototypes.h"
 #include "grammar.h"
 #include "parser.h"
+#include "types.h"
 
 struct tc_globals {
 	grammar *gram;
@@ -18,8 +19,8 @@ typedef void (*descend_ft)(DESCEND_ARGS);
 descend_ft *rule_handlers;
 
 void
-tc_descend(struct tc_globals *tg, int rule, synt_tree *t) {
-	rule_handlers[rule](tg, t);
+tc_descend(struct tc_globals *tg, int rule, synt_tree *t, void *arg) {
+	rule_handlers[rule](tg, t, arg);
 }
 
 DESCEND_FUNC(simple) {
@@ -37,30 +38,30 @@ DESCEND_FUNC(simple) {
 
 DESCEND_FUNC(parallel) {
 	// XXX
-	tc_descend_simple(tg, t);
+	tc_descend_simple(tg, t, arg);
 }
 
 DESCEND_FUNC(type) {
 	struct type **typepp = (struct type **)arg;
-	synt_tree *fc = type->fst_child;
+	synt_tree *fc = t->fst_child;
 	assert(t->type == 1);
 	assert(fc->type == 0);
 	*typepp = malloc(sizeof(struct type));
-	(*typepp)->type = fc->token;
-	switch(fc->token) {
+	(*typepp)->type = fc->token->type;
+	switch(fc->token->type) {
 		case T_INT:
 		case T_BOOL:
 			assert(fc->next == NULL);
 			break;
 		case '(':
 			tc_descend_type(tg, fc->next, &(*typepp)->fst_type);
-			assert(fc->next->next->type == 0 && fc->next->next->token == ',');
+			assert(fc->next->next->type == 0 && fc->next->next->token->type == ',');
 			tc_descend_simple(tg, fc->next->next->next, &(*typepp)->snd_type);
-			assert(fc->next->next->next->next->type == 0 && fc->next->next->next->next->token == ')');
+			assert(fc->next->next->next->next->type == 0 && fc->next->next->next->next->token->type == ')');
 			break;
 		case '[':
 			tc_descend_type(tg, fc->next, &(*typepp)->fst_type);
-			assert(fc->next->next->type == 0 && fc->next->next->token == ']');
+			assert(fc->next->next->type == 0 && fc->next->next->token->type == ']');
 			break;
 	}
 }
@@ -68,7 +69,7 @@ DESCEND_FUNC(type) {
 DESCEND_FUNC(vardecl) {
 	struct type *type;
 
-	tc_descend(tg, t->fst_chld->rule, t->fst_chld, &type);
+	tc_descend(tg, t->fst_child->rule, t->fst_child, &type);
 }
 
 void
