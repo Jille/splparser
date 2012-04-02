@@ -18,7 +18,12 @@ struct attempt *att_head;
 
 int
 main(int argc, char **argv) {
-	lazyarray *g  = lazyarray_create(gen_tokens, "test.spl", 1);
+	char *file = "test.spl";
+	if(argc == 2) {
+		file = argv[1];
+	}
+	lazyarray *g  = lazyarray_create(gen_tokens, file, 1);
+	// XXX load the grammar in another thread
 	grammar *gram = parse_grammar("grammar.g");
 
 	synt_error *e = create_synt_error();
