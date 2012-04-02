@@ -7,6 +7,7 @@
 #include "prototypes.h"
 #include "grammar.h"
 #include "parser.h"
+#include "types.h"
 
 // #define VERBOSE_PARSER_DEBUG
 

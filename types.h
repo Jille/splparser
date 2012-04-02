@@ -21,3 +21,5 @@ struct symbol {
 	struct type *type;
 	char *name;
 };
+
+void typechecker(synt_tree *t, grammar *gram);
