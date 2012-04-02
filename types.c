@@ -313,14 +313,16 @@ DESCEND_FUNC(fundecl) {
 	chld = chld->next;
 	assert(chld->token->type == '{');
 	chld = chld->next;
+
+	*tg->funcs_last = fdata;
+	tg->funcs_last = &fdata->next;
+
 	do {
 		// vardecls en stmts
 		tc_descend(tg, chld->rule, chld, fdata);
 		chld = chld->next;
 	} while(chld->token->type != '}');
 
-	*tg->funcs_last = fdata;
-	tg->funcs_last = &fdata->next;
 	tg->curfunc = NULL;
 }
 
@@ -417,7 +419,7 @@ DESCEND_FUNC(funcall) {
 		chld = chld->next;
 	}
 	assert(chld->token->type == ')');
-	if(arg != NULL) {
+	if(arg != NULL && t->next == 0) {
 		memcpy(arg, f->returntype, sizeof(struct type));
 	}
 }
@@ -554,6 +556,24 @@ DESCEND_FUNC(expression) {
 	}
 }
 
+DESCEND_FUNC(return) {
+	assert(arg != 0);
+	assert(t->fst_child->type == 0 && t->fst_child->token->type == T_RETURN);
+	assert(t->fst_child->next->next == 0 || t->fst_child->next->next->next == 0);
+
+	struct tc_func *tc = arg;
+	struct type newtype;
+	if(t->fst_child->next->next == 0) {
+		assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ';');
+		newtype.type = T_VOID;
+	} else {
+		assert(t->fst_child->next->next->type == 0 && t->fst_child->next->next->token->type == ';');
+		tc_descend_expression(tg, t->fst_child->next, &newtype);
+	}
+	unify_types(tg, tc->returntype, &newtype);
+}
+
+
 void
 typechecker(synt_tree *t, grammar *gram) {
 	int i;
@@ -577,5 +597,6 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(While, while);
 	SET_RULE_HANDLER(Assignment, assignment);
 	SET_RULE_HANDLER(FunCall, funcall);
+	SET_RULE_HANDLER(Return, return);
 	tc_descend(&tg, get_id_for_rule(gram, "S"), t, NULL);
 }
