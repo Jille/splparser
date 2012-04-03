@@ -2,3 +2,8 @@
 tail([t] list) {
 	return list;
 }
+
+Void
+main(Int argc, [Int] argv) {
+	argv = tail(argv);
+}

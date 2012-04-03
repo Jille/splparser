@@ -1,0 +1,10 @@
+(t, [t])
+f(t x) {
+	return (x, []);
+}
+
+Void
+main() {
+	(Int, [Int]) b = f(5);
+	return;
+}

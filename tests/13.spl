@@ -1,0 +1,10 @@
+[(t, ([u], u))]
+f(t a, u b) {
+	return [];
+}
+
+Void
+main() {
+	[(Int, ([Bool], Bool))] x = f(5, True);
+	return;
+}

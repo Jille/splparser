@@ -20,6 +20,11 @@ struct func_arg {
 	struct type *type;
 	struct func_arg *next;
 };
+struct pm_bind {
+	struct type *pm;
+	struct type *bound;
+	struct pm_bind *next;
+};
 struct variable {
 	char *name;
 	struct type *type;
@@ -91,28 +96,46 @@ show_type(int indent, struct type *t)
 }
 
 void
-unify_types(struct tc_globals *tg, struct type *store, struct type *data) {
+unify_types(struct tc_globals *tg, struct type *store, struct type *data, struct pm_bind **bindspp) {
 	if(store->type == data->type) {
 		switch(store->type) {
 			case '[':
 				if(data->list_type == NULL) {
 					return;
 				}
-				unify_types(tg, store->list_type, data->list_type);
-				break;
+				unify_types(tg, store->list_type, data->list_type, bindspp);
+				return;
 			case '(':
-				unify_types(tg, store->fst_type, data->fst_type);
-				unify_types(tg, store->snd_type, data->snd_type);
-				break;
+				unify_types(tg, store->fst_type, data->fst_type, bindspp);
+				unify_types(tg, store->snd_type, data->snd_type, bindspp);
+				return;
 			case T_WORD:
-				if(strcmp(store->pm_name, data->pm_name) != 0) {
-					goto failed;
+				if(strcmp(store->pm_name, data->pm_name) == 0) {
+					return;
 				}
 				break;
+			default:
+				return;
 		}
+	}
+	if(bindspp != NULL && store->type == T_WORD) {
+		struct pm_bind *bind = *bindspp;
+		while(bind != NULL) {
+			if(bind->pm == store) {
+				unify_types(tg, bind->bound, data, bindspp);
+				return;
+			}
+			bind = bind->next;
+		}
+
+		assert(bind == NULL);
+		bind = malloc(sizeof(struct pm_bind));
+		bind->pm = store;
+		bind->bound = data;
+		bind->next = *bindspp;
+		*bindspp = bind;
 		return;
 	}
-failed:
 	fprintf(stderr, "Type unification failed\n");
 	abort();
 }
@@ -192,6 +215,35 @@ DESCEND_FUNC(simple) {
 		}
 		chld = chld->next;
 	}
+}
+
+struct type *
+resolve_pm_types(struct type *in, struct pm_bind **binds) {
+	struct type *new = malloc(sizeof(struct type));
+	new->type = in->type;
+	switch(in->type) {
+		case '[':
+			new->list_type = resolve_pm_types(in->list_type, binds);
+			break;
+		case '(':
+			new->fst_type = resolve_pm_types(in->fst_type, binds);
+			new->snd_type = resolve_pm_types(in->snd_type, binds);
+			break;
+		case T_WORD: {
+			struct pm_bind *bind = *binds;
+			while(bind != NULL) {
+				if(bind->pm == in) {
+					free(new);
+					return resolve_pm_types(bind->bound, binds);
+				}
+				bind = bind->next;
+			}
+			break; }
+		default:
+			free(new);
+			return in;
+	}
+	return new;
 }
 
 DESCEND_FUNC(parallel) {
@@ -302,7 +354,7 @@ DESCEND_FUNC(vardecl) {
 	assert(chld->token->type == '=');
 	chld = chld->next;
 	tc_descend(tg, chld, &datatype);
-	unify_types(tg, vd->type, &datatype);
+	unify_types(tg, vd->type, &datatype, NULL);
 	vd->initial = chld;
 	chld = chld->next;
 	assert(chld->token->type == ';');
@@ -385,7 +437,7 @@ DESCEND_FUNC(if) {
 	chld = chld->next;
 	tc_descend(tg, chld, &datatype);
 	booltype.type = T_BOOL;
-	unify_types(tg, &booltype, &datatype);
+	unify_types(tg, &booltype, &datatype, NULL);
 	chld = chld->next;
 	assert(chld->token->type == ')');
 	chld = chld->next;
@@ -409,7 +461,7 @@ DESCEND_FUNC(while) {
 	chld = chld->next;
 	tc_descend(tg, chld, &datatype);
 	booltype.type = T_BOOL;
-	unify_types(tg, &booltype, &datatype);
+	unify_types(tg, &booltype, &datatype, NULL);
 	chld = chld->next;
 	assert(chld->token->type == ')');
 	chld = chld->next;
@@ -427,13 +479,14 @@ DESCEND_FUNC(assignment) {
 	assert(chld->token->type == '=');
 	chld = chld->next;
 	tc_descend(tg, chld, &datatype);
-	unify_types(tg, var->type, &datatype);
+	unify_types(tg, var->type, &datatype, NULL);
 	free(var);
 }
 
 DESCEND_FUNC(funcall) {
 	struct tc_func *f;
 	synt_tree *chld = t->fst_child;
+	struct pm_bind *binds = NULL;
 
 	assert(chld->token->type == T_WORD);
 	f = lookup_function(tg, chld->token->value.sval);
@@ -447,7 +500,7 @@ DESCEND_FUNC(funcall) {
 		while(fa != NULL) {
 			struct type datatype;
 			tc_descend(tg, henk, &datatype);
-			unify_types(tg, fa->type, &datatype);
+			unify_types(tg, fa->type, &datatype, &binds);
 			fa = fa->next;
 			if(henk->next == NULL) {
 				henk = NULL;
@@ -469,7 +522,13 @@ DESCEND_FUNC(funcall) {
 	}
 	assert(chld->token->type == ')');
 	if(arg != NULL) {
-		memcpy(arg, f->returntype, sizeof(struct type));
+		struct type *type = resolve_pm_types(f->returntype, &binds);
+		*(struct type *)arg = *type;
+	}
+	while(binds != NULL) {
+		struct pm_bind *next = binds->next;
+		free(binds);
+		binds = next;
 	}
 }
 
@@ -645,7 +704,7 @@ DESCEND_FUNC(return) {
 		assert(t->fst_child->next->next->type == 0 && t->fst_child->next->next->token->type == ';');
 		tc_descend_expression(tg, t->fst_child->next, &newtype);
 	}
-	unify_types(tg, tc->returntype, &newtype);
+	unify_types(tg, tc->returntype, &newtype, NULL);
 }
 
 
