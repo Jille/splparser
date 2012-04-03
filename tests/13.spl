@@ -1,10 +1,10 @@
-[(t, ([u], u))]
+(t, u)
 f(t a, u b) {
-	return [];
+	return (a, b);
 }
 
 Void
 main() {
-	[(Int, ([Bool], Bool))] x = f(5, True);
+	(Int, Bool) x = f(5, True);
 	return;
 }

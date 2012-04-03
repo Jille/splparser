@@ -35,7 +35,6 @@ struct tc_func {
 	struct func_arg *args;
 	struct vardecl *decls;
 	synt_tree *stmts;
-	struct func_arg **args_last;
 	struct vardecl **decls_last;
 	synt_tree **stmts_last;
 	struct tc_func *next;
@@ -131,7 +130,8 @@ unify_types(struct tc_globals *tg, struct type *store, struct type *data, struct
 		assert(bind == NULL);
 		bind = malloc(sizeof(struct pm_bind));
 		bind->pm = store;
-		bind->bound = data;
+		bind->bound = malloc(sizeof(struct type));
+		*bind->bound = *data;
 		bind->next = *bindspp;
 		*bindspp = bind;
 		return;
@@ -232,16 +232,17 @@ resolve_pm_types(struct type *in, struct pm_bind **binds) {
 		case T_WORD: {
 			struct pm_bind *bind = *binds;
 			while(bind != NULL) {
-				if(bind->pm == in) {
+				if(strcmp(bind->pm->pm_name, in->pm_name) == 0) {
 					free(new);
-					return resolve_pm_types(bind->bound, binds);
+					new = resolve_pm_types(bind->bound, binds);
+					break;
 				}
 				bind = bind->next;
 			}
 			break; }
 		default:
 			free(new);
-			return in;
+			new = in;
 	}
 	return new;
 }
@@ -385,8 +386,8 @@ DESCEND_FUNC(fargs) {
 		tc_descend(tg, chld, arg);
 	}
 
-	*fdata->args_last = fa;
-	fdata->args_last = &fa->next;
+	fa->next = fdata->args;
+	fdata->args = fa;
 }
 
 DESCEND_FUNC(fundecl) {
@@ -394,7 +395,6 @@ DESCEND_FUNC(fundecl) {
 	synt_tree *chld = t->fst_child;
 	tg->curfunc = fdata;
 
-	fdata->args_last = &fdata->args;
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
 
