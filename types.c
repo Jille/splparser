@@ -81,7 +81,11 @@ show_type(int indent, struct type *t)
 		show_type(indent + 1, t->snd_type);
 		return;
 	case T_WORD:
-		printf("Anonymous type with name %s\n", t->pm_name);
+		if(t->accept_empty_list) {
+			printf("Anonymous list type with name %s\n", t->pm_name);
+		} else {
+			printf("Anonymous type with name %s\n", t->pm_name);
+		}
 		return;
 	case T_INT:
 		printf("Integer\n");
@@ -127,14 +131,20 @@ unify_types(struct tc_globals *tg, struct type *store, struct type *data, struct
 			bind = bind->next;
 		}
 
-		assert(bind == NULL);
-		bind = malloc(sizeof(struct pm_bind));
-		bind->pm = store;
-		bind->bound = malloc(sizeof(struct type));
-		*bind->bound = *data;
-		bind->next = *bindspp;
-		*bindspp = bind;
-		return;
+		if(data->type == '[' && data->list_type == NULL) {
+			store->accept_empty_list = 1;
+			return;
+		}
+		if(!store->accept_empty_list) {
+			assert(bind == NULL);
+			bind = malloc(sizeof(struct pm_bind));
+			bind->pm = store;
+			bind->bound = malloc(sizeof(struct type));
+			*bind->bound = *data;
+			bind->next = *bindspp;
+			*bindspp = bind;
+			return;
+		}
 	}
 	fprintf(stderr, "Type unification failed\n");
 	abort();
@@ -234,12 +244,11 @@ resolve_pm_types(struct type *in, struct pm_bind **binds) {
 			while(bind != NULL) {
 				if(strcmp(bind->pm->pm_name, in->pm_name) == 0) {
 					free(new);
-					new = resolve_pm_types(bind->bound, binds);
-					break;
+					return resolve_pm_types(bind->bound, binds);
 				}
 				bind = bind->next;
 			}
-			break; }
+			} // FALL THROUGH
 		default:
 			free(new);
 			new = in;
@@ -288,6 +297,7 @@ DESCEND_FUNC(type) {
 			break;
 		case T_WORD:
 			(*typepp)->pm_name = fc->token->value.sval;
+			(*typepp)->accept_empty_list = 0;
 			break;
 		default:
 			fprintf(stderr, "Unexpected token in type declaration\n");

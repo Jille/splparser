@@ -13,7 +13,10 @@ struct type {
 			struct type *snd_type;
 		};
 		// if type == T_WORD:
-		char *pm_name;
+		struct {
+			char *pm_name;
+			char accept_empty_list;
+		};
 	};
 	struct type *next;
 };
