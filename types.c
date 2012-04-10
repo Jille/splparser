@@ -693,6 +693,7 @@ DESCEND_FUNC(expression) {
 		res->type = '[';
 		res->list_type = calloc(1, sizeof(struct type));
 		res->list_type->type = fst.type;
+		// XXX union-dingen van fst.type overnemen
 		return;
 	default:
 		fprintf(stderr, "Unexpected operator in Expression type checking: %s\n", token_to_string(t->fst_child->next->token->type));
