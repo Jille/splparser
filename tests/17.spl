@@ -1,6 +1,7 @@
-([t], (u, [[t]]))
+([u], (u, [[t]]))
 f(t x, u y) {
 	[[t]] z = [];
-	[t] tmp = [];
+	[u] tmp = [];
 	tmp = y : tmp;
+	return (tmp, (y, z));
 }
