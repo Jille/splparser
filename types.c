@@ -691,9 +691,8 @@ DESCEND_FUNC(expression) {
 		if(snd.list_type == 0 || snd.list_type->type != fst.type)
 			PARSING_FAIL("List composition (:) types don't match");
 		res->type = '[';
-		res->list_type = calloc(1, sizeof(struct type));
-		res->list_type->type = fst.type;
-		// XXX union-dingen van fst.type overnemen
+		res->list_type = malloc(sizeof(struct type));
+		memcpy(res->list_type, &fst, sizeof(struct type));
 		return;
 	default:
 		fprintf(stderr, "Unexpected operator in Expression type checking: %s\n", token_to_string(t->fst_child->next->token->type));
