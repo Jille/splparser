@@ -25,7 +25,7 @@ irconcat(irstm *stm, ...) {
 }
 
 irstm *
-irconcat(irstm *left, irstm *right) {
+mkirseq_opt(irstm *left, irstm *right) {
 	if(left == NULL) {
 		return right;
 	} else if(right == NULL) {
