@@ -26,4 +26,4 @@ struct symbol {
 	char *name;
 };
 
-void typechecker(synt_tree *t, grammar *gram);
+struct irunit *typechecker(synt_tree *t, grammar *gram);

@@ -7,6 +7,7 @@
 #include "prototypes.h"
 #include "grammar.h"
 #include "parser.h"
+#include "ir.h"
 #include "types.h"
 
 struct vardecl {
@@ -56,8 +57,8 @@ struct tc_globals {
 #define PARSING_FAIL(x) do { fprintf(stderr, "Error while parsing: %s\n", x); abort(); } while(0)
 
 #define DESCEND_ARGS struct tc_globals *tg, synt_tree *t, void *arg
-#define DESCEND_FUNC(name) void tc_descend_ ## name(DESCEND_ARGS)
-typedef void (*descend_ft)(DESCEND_ARGS);
+#define DESCEND_FUNC(name) struct irunit *tc_descend_ ## name(DESCEND_ARGS)
+typedef struct irunit *(*descend_ft)(DESCEND_ARGS);
 
 descend_ft *rule_handlers;
 
@@ -209,24 +210,6 @@ lookup_function(struct tc_globals *tg, const char *name) {
 	return NULL;
 }
 
-void
-tc_descend(struct tc_globals *tg, synt_tree *t, void *arg) {
-	assert(t->type == 1);
-	rule_handlers[t->rule](tg, t, arg);
-}
-
-DESCEND_FUNC(simple) {
-	synt_tree *chld;
-
-	chld = t->fst_child;
-	while(chld != NULL) {
-		if(chld->type == 1) {
-			tc_descend(tg, chld, arg);
-		}
-		chld = chld->next;
-	}
-}
-
 struct type *
 resolve_pm_types(struct type *in, struct pm_bind **binds) {
 	struct type *new = malloc(sizeof(struct type));
@@ -256,9 +239,52 @@ resolve_pm_types(struct type *in, struct pm_bind **binds) {
 	return new;
 }
 
-DESCEND_FUNC(parallel) {
-	// XXX
-	tc_descend_simple(tg, t, arg);
+struct irunit *
+tc_descend(struct tc_globals *tg, synt_tree *t, void *arg) {
+	assert(t->type == 1);
+	rule_handlers[t->rule](tg, t, arg);
+}
+
+DESCEND_FUNC(simple) {
+	synt_tree *chld;
+	struct irunit *ret = NULL;
+
+	chld = t->fst_child;
+	while(chld != NULL) {
+		if(chld->type == 1) {
+			struct irunit *res = tc_descend(tg, chld, arg);
+			if(res != NULL) {
+				if(ret == NULL) {
+					ret = res;
+				} else {
+					fprintf(stderr, "Warning: Simple descender got two irunits (rule %s)\n", tg->gram->rules[t->rule].name);
+				}
+			}
+		}
+		chld = chld->next;
+	}
+	return ret;
+}
+
+DESCEND_FUNC(simple_seq) {
+	synt_tree *chld;
+	irstm *ret = NULL;
+
+	chld = t->fst_child;
+	while(chld != NULL) {
+		if(chld->type == 1) {
+			irstm *res = tc_descend(tg, chld, arg);
+			if(res != NULL) {
+				if(ret == NULL) {
+					ret = res;
+				} else {
+					ret = mkirseq(ret, res);
+				}
+			}
+		}
+		chld = chld->next;
+	}
+	return ret;
 }
 
 DESCEND_FUNC(rettype) {
@@ -439,48 +465,58 @@ DESCEND_FUNC(fundecl) {
 DESCEND_FUNC(if) {
 	struct type datatype;
 	struct type booltype;
+	irexp *cond;
+	irstm *iftrue, iffalse = NULL;
 	synt_tree *chld = t->fst_child;
 
 	assert(chld->token->type == T_IF);
 	chld = chld->next;
 	assert(chld->token->type == '(');
 	chld = chld->next;
-	tc_descend(tg, chld, &datatype);
+	cond = tc_descend(tg, chld, &datatype);
 	booltype.type = T_BOOL;
 	unify_types(tg, &booltype, &datatype, NULL);
 	chld = chld->next;
 	assert(chld->token->type == ')');
 	chld = chld->next;
-	tc_descend(tg, chld, arg);
+	iftrue = tc_descend(tg, chld, arg);
 	chld = chld->next;
 	if(chld != NULL) {
 		assert(chld->token->type == T_ELSE);
 		chld = chld->next;
-		tc_descend(tg, chld, arg);
+		iffalse = tc_descend(tg, chld, arg);
 	}
+	irlabel true = getlabel();
+	irlabel false = getlabel();
+	return irconcat(mkircjump(T_NE, cond, mkirconst(0), mkirname(true), mkirname(false)), mkirseq_opt(mkirlabel(true), iftrue), mkirseq_opt(mkirlabel(false), iffalse));
 }
 
 DESCEND_FUNC(while) {
 	struct type datatype;
 	struct type booltype;
+	irexp *cond;
+	irstm *body;
 	synt_tree *chld = t->fst_child;
 
 	assert(chld->token->type == T_WHILE);
 	chld = chld->next;
 	assert(chld->token->type == '(');
 	chld = chld->next;
-	tc_descend(tg, chld, &datatype);
+	cond = tc_descend(tg, chld, &datatype);
 	booltype.type = T_BOOL;
 	unify_types(tg, &booltype, &datatype, NULL);
 	chld = chld->next;
 	assert(chld->token->type == ')');
 	chld = chld->next;
-	tc_descend(tg, chld, arg);
+	body = tc_descend(tg, chld, arg);
+
+	return irconcat(mkirlabel(start), mkircjump(T_NE, cond, mkirconst(0), mkirname(body), mkirname(done)), mkirseq_opt(mkirlabel(body), body), mkirjump(mkirname(start)), mkirlabel(done));
 }
 
 DESCEND_FUNC(assignment) {
 	struct variable *var;
 	struct type datatype;
+	irexp *val;
 	synt_tree *chld = t->fst_child;
 
 	assert(chld->token->type == T_WORD);
@@ -488,9 +524,11 @@ DESCEND_FUNC(assignment) {
 	chld = chld->next;
 	assert(chld->token->type == '=');
 	chld = chld->next;
-	tc_descend(tg, chld, &datatype);
+	val = tc_descend(tg, chld, &datatype);
 	unify_types(tg, var->type, &datatype, NULL);
 	free(var);
+
+	return mkirmove(mkirtemp((int)var), val);
 }
 
 DESCEND_FUNC(funcall) {
@@ -545,9 +583,9 @@ DESCEND_FUNC(funcall) {
 DESCEND_FUNC(stmt) {
 	if(t->fst_child->type == 1 && t->fst_child->rule == tg->funcall_rule) {
 		printf("FunCall!\n");
-		tc_descend_simple(tg, t, NULL);
+		return tc_descend_simple(tg, t, NULL);
 	} else {
-		tc_descend_simple(tg, t, arg);
+		return tc_descend_simple(tg, t, arg);
 	}
 }
 
@@ -590,16 +628,15 @@ DESCEND_FUNC(expression) {
 	// If we have only one child, simply return its type
 	if(t->fst_child->next == NULL) {
 		if(t->fst_child->type == 0)
-			tc_descend_expression_simple(tg, t->fst_child, arg);
+			return tc_descend_expression_simple(tg, t->fst_child, arg);
 		else {
 			// If this is a FunCall, type is the function type
 			if(t->fst_child->rule == tg->funcall_rule) {
-				tc_descend(tg, t->fst_child, arg);
+				return tc_descend(tg, t->fst_child, arg);
 			} else {
-				tc_descend_expression(tg, t->fst_child, arg);
+				return tc_descend_expression(tg, t->fst_child, arg);
 			}
 		}
-		return;
 	}
 
 	// Otherwise, we are a derived type; see if we can see the type from
@@ -718,7 +755,7 @@ DESCEND_FUNC(return) {
 }
 
 
-void
+struct irunit *
 typechecker(synt_tree *t, grammar *gram) {
 	int i;
 	struct tc_globals tg;
@@ -731,7 +768,6 @@ typechecker(synt_tree *t, grammar *gram) {
 		rule_handlers[i] = tc_descend_simple;
 	}
 #define SET_RULE_HANDLER(rulename, func)	rule_handlers[get_id_for_rule(gram, #rulename)] = tc_descend_ ## func;
-	SET_RULE_HANDLER(Decl, parallel); // XXX
 	SET_RULE_HANDLER(Exp, expression);
 	SET_RULE_HANDLER(Type, type);
 	SET_RULE_HANDLER(VarDecl, vardecl);
@@ -744,5 +780,5 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(FunCall, funcall);
 	SET_RULE_HANDLER(Return, return);
 	SET_RULE_HANDLER(Stmt, stmt);
-	tc_descend(&tg, t, NULL);
+	return tc_descend(&tg, t, NULL);
 }
