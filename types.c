@@ -654,17 +654,18 @@ DESCEND_FUNC(expression) {
 	// Otherwise, we are a derived type; see if we can see the type from
 	// the first literal
 	if(t->fst_child->type == 0) {
+		irexp *val;
 		switch(t->fst_child->token->type) {
 		case '!': // Boolean negation: Bool -> Bool
 			assert(t->fst_child->next->next == NULL);
-			irexp *val = tc_descend_expression(tg, t->fst_child->next, arg);
+			val = tc_descend_expression(tg, t->fst_child->next, arg);
 			if(res->type != T_BOOL)
 				PARSING_FAIL("Boolean negation (!) works only on booleans");
 			res->type = T_BOOL;
 			return mkirbinop(XOR, val, mkirconst(1));
 		case '-': // Numeric negation: Int -> Int
 			assert(t->fst_child->next->next == NULL);
-			irexp *val = tc_descend_expression(tg, t->fst_child->next, arg);
+			val = tc_descend_expression(tg, t->fst_child->next, arg);
 			if(res->type != T_INT)
 				PARSING_FAIL("Numeric negation (-) works only on integers");
 			res->type = T_INT;
