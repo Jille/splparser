@@ -444,6 +444,7 @@ DESCEND_FUNC(fundecl) {
 	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
 	synt_tree *chld = t->fst_child;
 	tg->curfunc = fdata;
+	irstm *body;
 
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
@@ -469,14 +470,14 @@ DESCEND_FUNC(fundecl) {
 
 	do {
 		// vardecls en stmts
-		tc_descend(tg, chld, fdata);
+		body = tc_descend(tg, chld, fdata);
 		chld = chld->next;
 	} while(chld->token->type != '}');
 
 	tg->curfunc = NULL;
 
 	fdata->func = getfunc();
-	return mkirfunc(fdata->func);
+	return mkirseq(mkirfunc(fdata->func), body);
 }
 
 DESCEND_FUNC(if) {
