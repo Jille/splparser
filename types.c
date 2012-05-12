@@ -42,7 +42,7 @@ struct tc_func {
 	struct vardecl **decls_last;
 	synt_tree **stmts_last;
 	struct type *pm_types;
-	irfunc *func;
+	irfunc func;
 	struct tc_func *next;
 };
 struct tc_globals {
@@ -377,11 +377,12 @@ DESCEND_FUNC(type) {
 		(*typepp)->next = tg->types;
 		tg->types = *typepp;
 	}
-	return;
+	return NULL;
 
 match:
 	free(*typepp);
 	*typepp = ts;
+	return NULL;
 }
 
 DESCEND_FUNC(vardecl) {
