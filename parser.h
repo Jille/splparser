@@ -1,4 +1,5 @@
 #include "tokens.h"
+#include "grammar.h"
 
 typedef struct _synt_error synt_error;
 typedef struct _synt_tree  synt_tree;
