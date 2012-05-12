@@ -8,6 +8,7 @@ date >> tokens.h
 echo >> tokens.h
 echo "#ifndef TOKENS_H" >> tokens.h
 echo "#define TOKENS_H" >> tokens.h
+echo "#include <string.h>" >> tokens.h
 echo >> tokens.h
 N=1
 for i in $TOKENS; do
