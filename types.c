@@ -31,6 +31,7 @@ struct pm_bind {
 struct variable {
 	char *name;
 	struct type *type;
+	irtemp temp;
 };
 struct tc_func {
 	struct type *returntype;
@@ -165,6 +166,7 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 		if(strcmp(vd->name, name) == 0) {
 			var->name = vd->name;
 			var->type = vd->type;
+			var->temp = vd->temp;
 			return var;
 		}
 		vd = vd->next;
@@ -175,6 +177,7 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 		if(strcmp(fa->name, name) == 0) {
 			var->name = fa->name;
 			var->type = fa->type;
+			var->temp = fa->temp;
 			return var;
 		}
 		fa = fa->next;
@@ -185,6 +188,7 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 		if(strcmp(vd->name, name) == 0) {
 			var->name = vd->name;
 			var->type = vd->type;
+			var->temp = vd->temp;
 			return var;
 		}
 		vd = vd->next;
@@ -437,7 +441,7 @@ DESCEND_FUNC(fundecl) {
 	synt_tree *chld = t->fst_child;
 	tg->curfunc = fdata;
 
-	fdata->temp = getfunc();
+	fdata->func = getfunc();
 
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
@@ -474,7 +478,7 @@ DESCEND_FUNC(if) {
 	struct type datatype;
 	struct type booltype;
 	irexp *cond;
-	irstm *iftrue, iffalse = NULL;
+	irstm *iftrue, *iffalse = NULL;
 	synt_tree *chld = t->fst_child;
 
 	assert(chld->token->type == T_IF);
