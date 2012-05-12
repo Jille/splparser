@@ -230,13 +230,68 @@ mkirconst(int num) {
 	return ret;
 }
 
-irexp *mkirname(irlabel label) { return NULL; }
-irexp *mkirbinop(irop binop, irexp *left, irexp *right) { return NULL; }
-irexp *mkirmem(irexp *a) { return NULL; }
+irexp *mkirname(irlabel label) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = NAME;
+	ret->label = label;
+	return ret;
+}
+
+irexp *mkirbinop(irop binop, irexp *left, irexp *right) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = BINOP;
+	ret->binop.op = binop;
+	ret->binop.left = left;
+	ret->binop.right = right;
+	return ret;
+}
+
+irexp *mkirmem(irexp *a) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = MEM;
+	ret->mem = a;
+	return ret;
+}
+
 irexp *mkircall(irexp *func, struct irexplist *args) { return NULL; }
-irexp *mkireseq(irstm *stm, irexp *exp) { return NULL; }
-irstm *mkirexp(irexp *dst) { return NULL; }
-irstm *mkirjump(irexp *addr /*, labellist targets */) { return NULL; }
-irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f) { return NULL; }
-irstm *mkirlabel(irlabel label) { return NULL; }
-irstm *mkirret(irexp *ret) { return NULL; }
+irexp *mkireseq(irstm *stm, irexp *exp) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = ESEQ;
+	ret->eseq.stm = stm;
+	ret->eseq.exp = exp;
+	return ret;
+}
+irstm *mkirexp(irexp *exp) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = EXP;
+	ret->exp = exp;
+	return ret;
+}
+irstm *mkirjump(irexp *addr /*, labellist targets */) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = JUMP;
+	ret->exp = addr;
+	return ret;
+}
+irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = CJUMP;
+	ret->cjump.op = relop;
+	ret->cjump.left = left;
+	ret->cjump.right = right;
+	ret->cjump.iftrue = t;
+	ret->cjump.iffalse = f;
+	return ret;
+}
+irstm *mkirlabel(irlabel label) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = LABEL;
+	ret->label = label;
+	return ret;
+}
+irstm *mkirret(irexp *exp) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = RET;
+	ret->ret = exp;
+	return ret;
+}
