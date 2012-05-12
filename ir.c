@@ -22,18 +22,12 @@ gettemp() {
 }
 
 irstm *
-irconcat(irstm *stm, ...) {
-	va_list ap;
-	va_start(ap, stm);
-	while(1) {
-		irstm *next = va_arg(ap, irstm *);
-		if(next == NULL) {
-			break;
-		}
-		stm = mkirseq(stm, next);
-	}
-	va_end(ap);
-	return stm;
+mkirseq(irstm *left, irstm *right) {
+	irstm *ret = malloc(sizeof(struct irunit));
+	ret->type = SEQ;
+	ret->seq.left = left;
+	ret->seq.right = right;
+	return ret;
 }
 
 irstm *
@@ -47,12 +41,18 @@ mkirseq_opt(irstm *left, irstm *right) {
 }
 
 irstm *
-mkirseq(irstm *left, irstm *right) {
-	irstm *ret = malloc(sizeof(struct irunit));
-	ret->type = SEQ;
-	ret->seq.left = left;
-	ret->seq.right = right;
-	return ret;
+irconcat(irstm *stm, ...) {
+	va_list ap;
+	va_start(ap, stm);
+	while(1) {
+		irstm *next = va_arg(ap, irstm *);
+		if(next == NULL) {
+			break;
+		}
+		stm = mkirseq(stm, next);
+	}
+	va_end(ap);
+	return stm;
 }
 
 irstm *
