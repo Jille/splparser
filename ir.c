@@ -83,16 +83,21 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("FUNC(%d), \n", ir->call.func);
 		print_indent(indent);
 		printf("ExpList(");
+		++indent;
 		struct irexplist *args = ir->call.args;
-		if(args != NULL) {
+		int has_args = args != NULL;
+		if(has_args) {
 			printf("\n");
-			print_indent(indent);
 		}
 		while(args != NULL) {
+			print_indent(indent);
 			show_ir_tree(args->exp, indent);
 			printf("\n");
-			print_indent(indent);
 			args = args->next;
+		}
+		--indent;
+		if(has_args) {
+			print_indent(indent);
 		}
 		printf(")\n");
 		print_indent(indent - 1);
