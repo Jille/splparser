@@ -552,6 +552,8 @@ DESCEND_FUNC(funcall) {
 	struct tc_func *f;
 	synt_tree *chld = t->fst_child;
 	struct pm_bind *binds = NULL;
+	struct irexplist *args = NULL;
+	struct irexplist **args_last = &args;
 
 	assert(chld->token->type == T_WORD);
 	f = lookup_function(tg, chld->token->value.sval);
@@ -564,8 +566,10 @@ DESCEND_FUNC(funcall) {
 
 		while(fa != NULL) {
 			struct type datatype;
-			tc_descend(tg, henk, &datatype);
+			*args_last = calloc(1, sizeof(struct irexplist));
+			(*args_last)->exp = tc_descend(tg, henk, &datatype);
 			unify_types(tg, fa->type, &datatype, &binds);
+			args_last = &(*args_last)->next;
 			fa = fa->next;
 			if(henk->next == NULL) {
 				henk = NULL;
@@ -595,6 +599,7 @@ DESCEND_FUNC(funcall) {
 		free(binds);
 		binds = next;
 	}
+	return mkircall(f->func, args);
 }
 
 DESCEND_FUNC(stmt) {
