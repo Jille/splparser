@@ -85,4 +85,5 @@ irstm *mkirexp(irexp *dst);
 irstm *mkirjump(irexp *addr);
 irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
 irstm *mkirlabel(irlabel label);
+irstm *mkirfunc(irfunc label);
 irstm *mkirret(irexp *ret);

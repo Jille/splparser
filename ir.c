@@ -238,4 +238,5 @@ irstm *mkirexp(irexp *dst) { return NULL; }
 irstm *mkirjump(irexp *addr /*, labellist targets */) { return NULL; }
 irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f) { return NULL; }
 irstm *mkirlabel(irlabel label) { return NULL; }
+irstm *mkirfunc(irfunc label) { return NULL; }
 irstm *mkirret(irexp *ret) { return NULL; }
