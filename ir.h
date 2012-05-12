@@ -14,7 +14,7 @@ struct irunit {
 		// Expressions
 		union {
 			int value;
-			irlabel label;
+			irlabel name;
 			irtemp temp;
 			struct {
 				irop op;

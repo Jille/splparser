@@ -50,7 +50,7 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("CONST(%d)", ir->value);
 		break;
 	case NAME:
-		lbl = irlabel_to_string(ir->label);
+		lbl = irlabel_to_string(ir->name);
 		printf("NAME(%s)", lbl);
 		free(lbl);
 		break;
@@ -233,7 +233,7 @@ mkirconst(int num) {
 irexp *mkirname(irlabel label) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = NAME;
-	ret->label = label;
+	ret->name = label;
 	return ret;
 }
 
