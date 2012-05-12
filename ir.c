@@ -143,6 +143,14 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("LABEL(%s)", lbl);
 		free(lbl);
 		break;
+	case FUNC:
+		printf("FUNC(%d)", ir->func);
+		break;
+	case RET:
+		printf("RET(");
+		show_ir_tree(ir->ret, indent);
+		printf(")");
+		break;
 	default:
 		assert(0 && "Unknown irtype");
 	}
