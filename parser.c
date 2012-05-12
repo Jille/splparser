@@ -9,6 +9,7 @@
 #include "grammar.h"
 #include "parser.h"
 #include "types.h"
+#include "ir.h"
 
 // #define VERBOSE_PARSER_DEBUG
 
@@ -37,11 +38,12 @@ main(int argc, char **argv) {
 	printf("Syntax tree:\n");
 	show_synt_tree(t, 0, gram);
 
-	typechecker(t, gram);
+	struct irunit *ir = typechecker(t, gram);
+	show_ir_tree(ir, 0);
 
-	printf("Pretty print:\n");
-	struct pretty_print_state state = {0, 0};
-	pretty_print(t, &state, gram);
+	//printf("Pretty print:\n");
+	//struct pretty_print_state state = {0, 0};
+	//pretty_print(t, &state, gram);
 
 	free(t);
 	lazyarray_destroy(g);

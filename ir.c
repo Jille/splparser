@@ -1,10 +1,141 @@
 #include <stdlib.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <assert.h>
+#include "parser.h"
 #include "ir.h"
 
 static irlabel labelctr = 0;
 static irfunc funcctr = 0;
 static irtemp tempctr = 0;
+
+const char *
+irop_to_string(irop op, int shrt)
+{
+	switch(op) {
+	case PLUS:    return shrt ? "+"  : "PLUS";
+	case MINUS:   return shrt ? "-"  : "MINUS";
+	case MUL:     return shrt ? "*"  : "MUL";
+	case DIV:     return shrt ? "/"  : "DIV";
+	case AND:     return shrt ? "&&" : "AND";
+	case OR:      return shrt ? "||" : "OR";
+	case LSHIFT:  return shrt ? "<<" : "LSHIFT";
+	case RSHIFT:  return shrt ? ">>" : "RSHIFT";
+	case ARSHIFT: return shrt ? "<<<": "ARSHIFT";
+	case XOR:     return shrt ? "^"  : "XOR";
+	case EQ:      return shrt ? "==" : "EQ";
+	case NE:      return shrt ? "!=" : "NE";
+	case LT:      return shrt ? "<"  : "LT";
+	case GT:      return shrt ? ">"  : "GT";
+	case LE:      return shrt ? "<=" : "LE";
+	case GE:      return shrt ? ">=" : "GE";
+	default:      return "???";
+	}
+}
+
+char *
+irlabel_to_string(irlabel label) {
+	char *res;
+	asprintf(&res, "LABEL(%d)", label);
+	return res;
+}
+
+void
+show_ir_tree(struct irunit *ir, int indent) {
+	char *lbl;
+	switch(ir->type) {
+	case CONST:
+		printf("CONST(%d)", ir->value);
+		break;
+	case NAME:
+		lbl = irlabel_to_string(ir->label);
+		printf("NAME(%s)", lbl);
+		free(lbl);
+		break;
+	case TEMP:
+		printf("TEMP(%d)", ir->temp);
+		break;
+	case BINOP:
+		printf("BINOP(\n");
+		++indent;
+		print_indent(indent);
+		show_ir_tree(ir->binop.left, indent);
+		printf("\n");
+		print_indent(indent);
+		printf("%s\n", irop_to_string(ir->binop.op, 1));
+		print_indent(indent);
+		show_ir_tree(ir->binop.right, indent);
+		printf("\n");
+		print_indent(indent);
+		printf(")");
+		break;
+	case MEM:
+		printf("MEM(");
+		show_ir_tree(ir->mem, indent);
+		printf(")");
+		break;
+	case CALL:
+		printf("CALL(\n");
+		++indent;
+		print_indent(indent);
+		show_ir_tree(ir->call.func, indent);
+		printf(", \n");
+		print_indent(indent);
+		printf("ExpList(");
+		struct irexplist *args = ir->call.args;
+		if(args != NULL) {
+			printf("\n");
+			print_indent(indent);
+		}
+		while(args != NULL) {
+			show_ir_tree(args->exp, indent);
+			printf("\n");
+			print_indent(indent);
+			args = args->next;
+		}
+		printf(")\n");
+		print_indent(indent - 1);
+		printf(")");
+		break;
+	case ESEQ:
+		printf("ESEQ(todo)");
+		break;
+	case MOVE:
+		printf("MOVE(todo)");
+		break;
+	case EXP:
+		printf("EXP(");
+		show_ir_tree(ir->exp, indent);
+		printf(")");
+		break;
+	case JUMP:
+		printf("JUMP(todo)");
+		break;
+	case CJUMP:
+		printf("CJUMP(todo)");
+		break;
+	case SEQ:
+		printf("SEQ(\n");
+		indent++;
+		print_indent(indent);
+		show_ir_tree(ir->seq.left, indent);
+		printf(",\n");
+		print_indent(indent);
+		show_ir_tree(ir->seq.right, indent);
+		printf("\n");
+		indent--;
+		print_indent(indent);
+		printf(")");
+		break;
+	case LABEL:
+		lbl = irlabel_to_string(ir->label);
+		printf("LABEL(%s)", lbl);
+		free(lbl);
+		break;
+	default:
+		assert(0 && "Unknown irtype");
+	}
+}
 
 irlabel
 getlabel() {
