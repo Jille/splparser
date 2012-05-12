@@ -10,7 +10,7 @@ static irlabel labelctr = 0;
 static irfunc funcctr = 0;
 static irtemp tempctr = 0;
 
-const char *
+static const char *
 irop_to_string(irop op, int shrt)
 {
 	switch(op) {
@@ -34,7 +34,7 @@ irop_to_string(irop op, int shrt)
 	}
 }
 
-char *
+static char *
 irlabel_to_string(irlabel label) {
 	char *res;
 	asprintf(&res, "LABEL(%d)", label);
