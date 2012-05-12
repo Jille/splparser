@@ -8,8 +8,6 @@ typedef int irlabel;
 typedef int irfunc;
 typedef int irtemp;
 
-void show_ir_tree(struct irunit *ir, int indent);
-
 struct irunit {
 	irtype type;
 	union {

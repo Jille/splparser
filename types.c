@@ -42,7 +42,7 @@ struct tc_func {
 	struct vardecl **decls_last;
 	synt_tree **stmts_last;
 	struct type *pm_types;
-	irfunc *func;
+	irfunc func;
 	struct tc_func *next;
 };
 struct tc_globals {
@@ -377,11 +377,12 @@ DESCEND_FUNC(type) {
 		(*typepp)->next = tg->types;
 		tg->types = *typepp;
 	}
-	return;
+	return NULL;
 
 match:
 	free(*typepp);
 	*typepp = ts;
+	return NULL;
 }
 
 DESCEND_FUNC(vardecl) {
@@ -552,6 +553,8 @@ DESCEND_FUNC(funcall) {
 	struct tc_func *f;
 	synt_tree *chld = t->fst_child;
 	struct pm_bind *binds = NULL;
+	struct irexplist *args = NULL;
+	struct irexplist **args_last = &args;
 
 	assert(chld->token->type == T_WORD);
 	f = lookup_function(tg, chld->token->value.sval);
@@ -564,8 +567,10 @@ DESCEND_FUNC(funcall) {
 
 		while(fa != NULL) {
 			struct type datatype;
-			tc_descend(tg, henk, &datatype);
+			*args_last = calloc(1, sizeof(struct irexplist));
+			(*args_last)->exp = tc_descend(tg, henk, &datatype);
 			unify_types(tg, fa->type, &datatype, &binds);
+			args_last = &(*args_last)->next;
 			fa = fa->next;
 			if(henk->next == NULL) {
 				henk = NULL;
@@ -595,6 +600,7 @@ DESCEND_FUNC(funcall) {
 		free(binds);
 		binds = next;
 	}
+	return mkircall(f->func, args);
 }
 
 DESCEND_FUNC(stmt) {
@@ -814,5 +820,6 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(FunCall, funcall);
 	SET_RULE_HANDLER(Return, return);
 	SET_RULE_HANDLER(Stmt, stmt);
+	SET_RULE_HANDLER(Stmt+, simple_seq);
 	return tc_descend(&tg, t, NULL);
 }
