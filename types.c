@@ -548,9 +548,10 @@ DESCEND_FUNC(assignment) {
 	chld = chld->next;
 	val = tc_descend(tg, chld, &datatype);
 	unify_types(tg, var->type, &datatype, NULL);
+	irtemp v = var->temp;
 	free(var);
 
-	return mkirmove(mkirtemp(var->temp), val);
+	return mkirmove(mkirtemp(v), val);
 }
 
 DESCEND_FUNC(funcall) {
