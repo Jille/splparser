@@ -1,5 +1,5 @@
 typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET } irtype;
-typedef enum { PLUS, MINUS, MUL, DIV, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
+typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
 struct irunit;
 typedef struct irunit irexp;
@@ -66,3 +66,14 @@ struct irexplist {
 	irexp *exp;
 	struct irexplist *next;
 };
+
+/* ir.c */
+void show_ir_tree(struct irunit *ir, int indent);
+irlabel getlabel(void);
+irfunc getfunc(void);
+irtemp gettemp(void);
+irstm *mkirseq(irstm *left, irstm *right);
+irstm *mkirseq_opt(irstm *left, irstm *right);
+irstm *irconcat(irstm *stm, ...);
+irstm *mkirmove(irexp *dst, irexp *src);
+irexp *mkirtemp(irtemp num);

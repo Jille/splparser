@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -101,7 +102,17 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("ESEQ(todo)");
 		break;
 	case MOVE:
-		printf("MOVE(todo)");
+		printf("MOVE(");
+		indent++;
+		print_indent(indent);
+		show_ir_tree(ir->move.dst, indent);
+		printf(",\n");
+		print_indent(indent);
+		show_ir_tree(ir->move.src, indent);
+		printf("\n");
+		indent--;
+		print_indent(indent);
+		printf(")");
 		break;
 	case EXP:
 		printf("EXP(");

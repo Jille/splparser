@@ -714,7 +714,11 @@ DESCEND_FUNC(expression) {
 		if(fst.type != T_INT || snd.type != T_INT)
 			PARSING_FAIL("Numeric comparison (<, >, <=, >=) works only on integers");
 		res->type = T_BOOL;
-		return mkirbinop(XXX, lhs, rhs);
+		if(token == '<' || token == T_LTE) {
+			return mkirbinop(LE, lhs, rhs);
+		} else {
+			return mkirbinop(GE, lhs, rhs);
+		}
 	// Binary composition operators
 	case T_AND:
 	case T_OR:
@@ -736,7 +740,18 @@ DESCEND_FUNC(expression) {
 		if(fst.type != T_INT || snd.type != T_INT)
 			PARSING_FAIL("Numeric mathematics (+, -, *, /, %) work only on integers");
 		res->type = T_INT;
-		return mkirbinop(XXX, lhs, rhs);
+		switch(token) {
+			case '+':
+				return mkirbinop(PLUS, lhs, rhs);
+			case '-':
+				return mkirbinop(MINUS, lhs, rhs);
+			case '*':
+				return mkirbinop(MUL, lhs, rhs);
+			case '/':
+				return mkirbinop(DIV, lhs, rhs);
+			case '%':
+				return mkirbinop(MOD, lhs, rhs);
+		}
 	// List composition operator
 	case ':':
 		if(snd.type != '[')
