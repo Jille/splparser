@@ -60,6 +60,6 @@ struct irunit {
 };
 
 struct irexplist {
-	struct irexp *exp;
+	irexp *exp;
 	struct irexplist *next;
 };
