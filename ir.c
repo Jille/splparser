@@ -43,6 +43,7 @@ irlabel_to_string(irlabel label) {
 
 void
 show_ir_tree(struct irunit *ir, int indent) {
+	assert(ir != NULL);
 	char *lbl;
 	switch(ir->type) {
 	case CONST:

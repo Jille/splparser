@@ -40,6 +40,7 @@ main(int argc, char **argv) {
 
 	struct irunit *ir = typechecker(t, gram);
 	show_ir_tree(ir, 0);
+	printf("\n");
 
 	//printf("Pretty print:\n");
 	//struct pretty_print_state state = {0, 0};
