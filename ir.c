@@ -79,8 +79,7 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("CALL(\n");
 		++indent;
 		print_indent(indent);
-		show_ir_tree(ir->call.func, indent);
-		printf(", \n");
+		printf("FUNC(%d), \n", ir->call.func);
 		print_indent(indent);
 		printf("ExpList(");
 		struct irexplist *args = ir->call.args;
@@ -233,7 +232,7 @@ mkirconst(int num) {
 irexp *mkirname(irlabel label) { return NULL; }
 irexp *mkirbinop(irop binop, irexp *left, irexp *right) { return NULL; }
 irexp *mkirmem(irexp *a) { return NULL; }
-irexp *mkircall(irexp *func, struct irexplist *args) { return NULL; }
+irexp *mkircall(irfunc func, struct irexplist *args) { return NULL; }
 irexp *mkireseq(irstm *stm, irexp *exp) { return NULL; }
 irstm *mkirexp(irexp *dst) { return NULL; }
 irstm *mkirjump(irexp *addr /*, labellist targets */) { return NULL; }
