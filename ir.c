@@ -18,7 +18,7 @@ getfunc() {
 
 irtemp
 gettemp() {
-	return ++temp;
+	return ++tempctr;
 }
 
 irstm *
