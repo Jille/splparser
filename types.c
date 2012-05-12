@@ -249,7 +249,7 @@ resolve_pm_types(struct type *in, struct pm_bind **binds) {
 struct irunit *
 tc_descend(struct tc_globals *tg, synt_tree *t, void *arg) {
 	assert(t->type == 1);
-	rule_handlers[t->rule](tg, t, arg);
+	return rule_handlers[t->rule](tg, t, arg);
 }
 
 DESCEND_FUNC(simple) {
@@ -298,12 +298,13 @@ DESCEND_FUNC(rettype) {
 	struct type **typepp = arg;
 
 	if(t->fst_child->type == 1) {
-		tc_descend(tg, t->fst_child, arg);
+		return tc_descend(tg, t->fst_child, arg);
 	} else {
 		assert(t->fst_child->token->type == T_VOID);
 		*typepp = malloc(sizeof(struct type));
 		(*typepp)->type = t->fst_child->token->type;
 	}
+	return NULL;
 }
 
 DESCEND_FUNC(type) {
@@ -414,6 +415,7 @@ DESCEND_FUNC(vardecl) {
 		*tg->decls_last = vd;
 		tg->decls_last = &vd->next;
 	}
+	return NULL;
 }
 
 DESCEND_FUNC(fargs) {
@@ -435,14 +437,13 @@ DESCEND_FUNC(fargs) {
 
 	fa->next = fdata->args;
 	fdata->args = fa;
+	return NULL;
 }
 
 DESCEND_FUNC(fundecl) {
 	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
 	synt_tree *chld = t->fst_child;
 	tg->curfunc = fdata;
-
-	fdata->func = getfunc();
 
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
@@ -473,6 +474,9 @@ DESCEND_FUNC(fundecl) {
 	} while(chld->token->type != '}');
 
 	tg->curfunc = NULL;
+
+	fdata->func = getfunc();
+	return mkirfunc(fdata->func);
 }
 
 DESCEND_FUNC(if) {
