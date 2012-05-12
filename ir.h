@@ -1,4 +1,5 @@
 typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET } irtype;
+typedef enum { PLUS, MINUS, MUL, DIV, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
 struct irunit;
 typedef struct irunit irexp;
@@ -16,11 +17,11 @@ struct irunit {
 			irlabel label;
 			irtemp temp;
 			struct {
-				char op;
+				irop op;
 				irexp *left;
 				irexp *right;
 			} binop;
-			irexp *exp;
+			irexp *mem;
 			struct {
 				irexp *func;
 				struct irexplist *args;
@@ -42,7 +43,7 @@ struct irunit {
 				// LabelList targets ..?
 			} jump;
 			struct {
-				char op;
+				irop op;
 				irexp *left;
 				irexp *right;
 				irlabel iftrue;
