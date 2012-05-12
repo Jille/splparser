@@ -678,7 +678,7 @@ DESCEND_FUNC(expression) {
 			assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ']');
 			res->type = '[';
 			res->list_type = NULL;
-			return mkirconst(0);
+			return mkirconst(0); // XXX
 		case '(':
 			if(t->fst_child->next->next->next == NULL) { // Exp within braces
 				assert(t->fst_child->next->next->token->type == ')');
@@ -692,7 +692,7 @@ DESCEND_FUNC(expression) {
 				tc_descend_expression(tg, t->fst_child->next, res->fst_type);
 				tc_descend_expression(tg, t->fst_child->next->next->next, res->snd_type);
 			}
-			return;
+			return mkirconst(0); // XXX
 		default:
 			// it's something simple, or all has failed
 			return tc_descend_expression_simple(tg, t->fst_child, arg);
@@ -704,8 +704,8 @@ DESCEND_FUNC(expression) {
 	assert(t->fst_child->next->type == 0 || t->fst_child->next->fst_child->type == 0);
 	assert(t->fst_child->next->next->next == 0);
 	struct type fst, snd;
-	tc_descend_expression(tg, t->fst_child, &fst);
-	tc_descend_expression(tg, t->fst_child->next->next, &snd);
+	irexp *lhs = tc_descend_expression(tg, t->fst_child, &fst);
+	irexp *rhs = tc_descend_expression(tg, t->fst_child->next->next, &snd);
 
 	char token = t->fst_child->next->type != 0 ? t->fst_child->next->fst_child->token->type : t->fst_child->next->token->type;
 	switch(token) {
@@ -714,14 +714,14 @@ DESCEND_FUNC(expression) {
 		if(fst.type != T_INT || snd.type != T_INT)
 			PARSING_FAIL("Numeric comparison (<, >, <=, >=) works only on integers");
 		res->type = T_BOOL;
-		return;
+		return mkirbinop(XXX, lhs, rhs);
 	// Binary composition operators
 	case T_AND:
 	case T_OR:
 		if(fst.type != T_BOOL || snd.type != T_BOOL)
 			PARSING_FAIL("Binary composition (&&, ||) works only on booleans");
 		res->type = T_BOOL;
-		return;
+		return mkirbinop(token == T_AND ? AND : OR, lhs, rhs);
 	// Binary or numeric equality operators
 	case T_EQ: case T_NE:
 		if((fst.type != T_INT && fst.type != T_BOOL)
@@ -730,13 +730,13 @@ DESCEND_FUNC(expression) {
 		if(fst.type != snd.type)
 			PARSING_FAIL("Binary or numeric equality (==, !=) can only work on two equal types");
 		res->type = T_BOOL;
-		return;
+		return mkirbinop(token == T_EQ ? EQ : NE, lhs, rhs);
 	// Numeric mathematical operators
 	case '+': case '-': case '*': case '/': case '%':
 		if(fst.type != T_INT || snd.type != T_INT)
 			PARSING_FAIL("Numeric mathematics (+, -, *, /, %) work only on integers");
 		res->type = T_INT;
-		return;
+		return mkirbinop(XXX, lhs, rhs);
 	// List composition operator
 	case ':':
 		if(snd.type != '[')
@@ -746,7 +746,7 @@ DESCEND_FUNC(expression) {
 		res->type = '[';
 		res->list_type = malloc(sizeof(struct type));
 		memcpy(res->list_type, &fst, sizeof(struct type));
-		return;
+		return mkirconst(0); // XXX
 	default:
 		fprintf(stderr, "Unexpected operator in Expression type checking: %s\n", token_to_string(t->fst_child->next->token->type));
 		abort();
@@ -757,19 +757,21 @@ DESCEND_FUNC(return) {
 	assert(arg != NULL);
 	assert(t->fst_child->type == 0 && t->fst_child->token->type == T_RETURN);
 	assert(t->fst_child->next->next == NULL || t->fst_child->next->next->next == NULL);
+	irexp *ret;
 
 	struct tc_func *tc = arg;
 	struct type newtype;
 	if(t->fst_child->next->next == NULL) {
 		assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ';');
 		newtype.type = T_VOID;
+		ret = mkirconst(0);
 	} else {
 		assert(t->fst_child->next->next->type == 0 && t->fst_child->next->next->token->type == ';');
-		tc_descend_expression(tg, t->fst_child->next, &newtype);
+		ret = tc_descend_expression(tg, t->fst_child->next, &newtype);
 	}
 	unify_types(tg, tc->returntype, &newtype, NULL);
+	return mkirret(ret);
 }
-
 
 struct irunit *
 typechecker(synt_tree *t, grammar *gram) {
