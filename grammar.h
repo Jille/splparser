@@ -1,3 +1,5 @@
+#ifndef GRAMMAR_H
+#define GRAMMAR_H
 #include "tokens.h"
 
 typedef struct _grammar grammar;
@@ -33,3 +35,5 @@ parse_grammar(char *file);
 
 void
 show_grammar(grammar *g);
+
+#endif
