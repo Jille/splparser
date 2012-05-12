@@ -65,23 +65,24 @@ struct irexplist {
 	struct irexplist *next;
 };
 
+/* ir.c */
+void show_ir_tree(struct irunit *ir, int indent);
 irlabel getlabel(void);
 irfunc getfunc(void);
 irtemp gettemp(void);
-
-irexp *mkirconst(int value);
-irexp *mkirname(irlabel label);
+irstm *mkirseq(irstm *left, irstm *right);
+irstm *mkirseq_opt(irstm *left, irstm *right);
+irstm *irconcat(irstm *stm, ...);
+irstm *mkirmove(irexp *dst, irexp *src);
 irexp *mkirtemp(irtemp num);
+irexp *mkirconst(int num);
+irexp *mkirname(irlabel label);
 irexp *mkirbinop(irop binop, irexp *left, irexp *right);
 irexp *mkirmem(irexp *a);
 irexp *mkircall(irexp *func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
-irstm *mkirmove(irexp *dst, irexp *src);
 irstm *mkirexp(irexp *dst);
-irstm *mkirjump(irexp *addr /*, labellist targets */);
+irstm *mkirjump(irexp *addr);
 irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
-irstm *mkirseq(irstm *left, irstm *right);
-irstm *mkirseq_opt(irstm *left, irstm *right);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *ret);
-irstm *irconcat(irstm *stm, ...);
