@@ -221,3 +221,22 @@ mkirtemp(irtemp num) {
 	ret->temp = num;
 	return ret;
 }
+
+irexp *
+mkirconst(int num) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = CONST;
+	ret->value = num;
+	return ret;
+}
+
+irexp *mkirname(irlabel label) { return NULL; }
+irexp *mkirbinop(irop binop, irexp *left, irexp *right) { return NULL; }
+irexp *mkirmem(irexp *a) { return NULL; }
+irexp *mkircall(irexp *func, struct irexplist *args) { return NULL; }
+irexp *mkireseq(irstm *stm, irexp *exp) { return NULL; }
+irstm *mkirexp(irexp *dst) { return NULL; }
+irstm *mkirjump(irexp *addr /*, labellist targets */) { return NULL; }
+irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f) { return NULL; }
+irstm *mkirlabel(irlabel label) { return NULL; }
+irstm *mkirret(irexp *ret) { return NULL; }
