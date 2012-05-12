@@ -101,7 +101,7 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("ESEQ(todo)");
 		break;
 	case MOVE:
-		printf("MOVE(");
+		puts("MOVE(");
 		indent++;
 		print_indent(indent);
 		show_ir_tree(ir->move.dst, indent);
