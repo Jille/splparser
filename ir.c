@@ -3,10 +3,22 @@
 #include "ir.h"
 
 static irlabel labelctr = 0;
+static irfunc funcctr = 0;
+static irtemp tempctr = 0;
 
 irlabel
 getlabel() {
 	return ++labelctr;
+}
+
+irfunc
+getfunc() {
+	return ++funcctr;
+}
+
+irtemp
+gettemp() {
+	return ++temp;
 }
 
 irstm *
@@ -53,7 +65,7 @@ mkirmove(irexp *dst, irexp *src) {
 }
 
 irexp *
-mkirtemp(int num) {
+mkirtemp(irtemp num) {
 	irstm *ret = malloc(sizeof(struct irunit));
 	ret->type = TEMP;
 	ret->temp = num;

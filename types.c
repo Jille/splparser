@@ -14,11 +14,13 @@ struct vardecl {
 	char *name;
 	struct type *type;
 	synt_tree *initial;
+	irtemp temp;
 	struct vardecl *next;
 };
 struct func_arg {
 	char *name;
 	struct type *type;
+	irtemp temp;
 	struct func_arg *next;
 };
 struct pm_bind {
@@ -38,8 +40,9 @@ struct tc_func {
 	synt_tree *stmts;
 	struct vardecl **decls_last;
 	synt_tree **stmts_last;
-	struct tc_func *next;
 	struct type *pm_types;
+	irfunc *func;
+	struct tc_func *next;
 };
 struct tc_globals {
 	grammar *gram;
@@ -396,6 +399,8 @@ DESCEND_FUNC(vardecl) {
 	chld = chld->next;
 	assert(chld->token->type == ';');
 
+	vd->temp = gettemp();
+
 	if(arg != NULL) {
 		struct tc_func *fdata = arg;
 		*fdata->decls_last = vd;
@@ -411,6 +416,7 @@ DESCEND_FUNC(fargs) {
 	struct func_arg *fa = malloc(sizeof(struct vardecl));
 	synt_tree *chld = t->fst_child;
 
+	fa->temp = gettemp();
 	fa->next = NULL;
 	tc_descend(tg, chld, &fa->type);
 	chld = chld->next;
@@ -430,6 +436,8 @@ DESCEND_FUNC(fundecl) {
 	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
 	synt_tree *chld = t->fst_child;
 	tg->curfunc = fdata;
+
+	fdata->temp = getfunc();
 
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
@@ -496,6 +504,7 @@ DESCEND_FUNC(while) {
 	struct type booltype;
 	irexp *cond;
 	irstm *body;
+	irlabel start, done;
 	synt_tree *chld = t->fst_child;
 
 	assert(chld->token->type == T_WHILE);
@@ -509,6 +518,9 @@ DESCEND_FUNC(while) {
 	assert(chld->token->type == ')');
 	chld = chld->next;
 	body = tc_descend(tg, chld, arg);
+
+	start = getlabel();
+	done = getlabel();
 
 	return irconcat(mkirlabel(start), mkircjump(T_NE, cond, mkirconst(0), mkirname(body), mkirname(done)), mkirseq_opt(mkirlabel(body), body), mkirjump(mkirname(start)), mkirlabel(done));
 }
@@ -528,7 +540,7 @@ DESCEND_FUNC(assignment) {
 	unify_types(tg, var->type, &datatype, NULL);
 	free(var);
 
-	return mkirmove(mkirtemp((int)var), val);
+	return mkirmove(mkirtemp(var->temp), val);
 }
 
 DESCEND_FUNC(funcall) {
@@ -601,15 +613,15 @@ DESCEND_FUNC(expression_simple) {
 		struct variable *var = lookup_variable(tg, tg->curfunc, t->token->value.sval);
 		memcpy(res, var->type, sizeof(struct type));
 		free(var);
-		return;
+		return mkirtemp(var->temp);
 	}
 	case T_NUMBER:
 		res->type = T_INT;
-		return;
+		return mkirconst(t->token->value.ival);
 	case T_FALSE:
 	case T_TRUE:
 		res->type = T_BOOL;
-		return;
+		return mkirconst(t->token->value.bval);
 	default:
 		fprintf(stderr, "Unexpected token type in Expression: %s\n", token_to_string(t->token->type));
 		abort();
@@ -645,27 +657,27 @@ DESCEND_FUNC(expression) {
 		switch(t->fst_child->token->type) {
 		case '!': // Boolean negation: Bool -> Bool
 			assert(t->fst_child->next->next == NULL);
-			tc_descend_expression(tg, t->fst_child->next, arg);
+			irexp *val = tc_descend_expression(tg, t->fst_child->next, arg);
 			if(res->type != T_BOOL)
 				PARSING_FAIL("Boolean negation (!) works only on booleans");
 			res->type = T_BOOL;
-			return;
+			return mkirbinop(XOR, val, mkirconst(1));
 		case '-': // Numeric negation: Int -> Int
 			assert(t->fst_child->next->next == NULL);
-			tc_descend_expression(tg, t->fst_child->next, arg);
+			irexp *val = tc_descend_expression(tg, t->fst_child->next, arg);
 			if(res->type != T_INT)
 				PARSING_FAIL("Numeric negation (-) works only on integers");
 			res->type = T_INT;
-			return;
+			return mkirbinop(MINUS, mkirconst(0), val);
 		case '[': // Empty list
 			assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ']');
 			res->type = '[';
 			res->list_type = NULL;
-			return;
+			return mkirconst(0);
 		case '(':
 			if(t->fst_child->next->next->next == NULL) { // Exp within braces
 				assert(t->fst_child->next->next->token->type == ')');
-				tc_descend_expression(tg, t->fst_child->next, arg);
+				return tc_descend_expression(tg, t->fst_child->next, arg);
 			} else { // Tuple
 				assert(t->fst_child->next->next->token->type == ',');
 				assert(t->fst_child->next->next->next->next->token->type == ')');
@@ -678,8 +690,7 @@ DESCEND_FUNC(expression) {
 			return;
 		default:
 			// it's something simple, or all has failed
-			tc_descend_expression_simple(tg, t->fst_child, arg);
-			return;
+			return tc_descend_expression_simple(tg, t->fst_child, arg);
 		}
 	}
 

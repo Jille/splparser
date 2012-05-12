@@ -1,17 +1,20 @@
-typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL } irtype;
+typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET } irtype;
 
 struct irunit;
 typedef struct irunit irexp;
 typedef struct irunit irstm;
 typedef int irlabel;
+typedef int irfunc;
+typedef int irtemp;
 
 struct irunit {
 	irtype type;
 	union {
+		// Expressions
 		union {
 			int value;
-			irlabel *label;
-			int temp;
+			irlabel label;
+			irtemp temp;
 			struct {
 				char op;
 				irexp *left;
@@ -27,6 +30,7 @@ struct irunit {
 				irexp *exp;
 			} eseq;
 		};
+		// Statements
 		union {
 			struct {
 				irexp *dst;
@@ -41,14 +45,16 @@ struct irunit {
 				char op;
 				irexp *left;
 				irexp *right;
-				irlabel *iftrue;
-				irlabel *iffalse;
+				irlabel iftrue;
+				irlabel iffalse;
 			} cjump;
 			struct {
 				irstm *left;
 				irstm *right;
 			} seq;
-			irlabel *label;
+			irlabel label;
+			irfunc func;
+			irexp *ret;
 		};
 	};
 };
