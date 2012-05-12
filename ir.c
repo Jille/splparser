@@ -79,8 +79,7 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("CALL(\n");
 		++indent;
 		print_indent(indent);
-		show_ir_tree(ir->call.func, indent);
-		printf(", \n");
+		printf("FUNC(%d), \n", ir->call.func);
 		print_indent(indent);
 		printf("ExpList(");
 		struct irexplist *args = ir->call.args;
@@ -253,7 +252,14 @@ irexp *mkirmem(irexp *a) {
 	return ret;
 }
 
-irexp *mkircall(irexp *func, struct irexplist *args) { return NULL; }
+irexp *mkircall(irfunc func, struct irexplist *args) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = CALL;
+	ret->call.func = func;
+	ret->call.args = args;
+	return ret;
+}
+
 irexp *mkireseq(irstm *stm, irexp *exp) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = ESEQ;
@@ -293,5 +299,11 @@ irstm *mkirret(irexp *exp) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = RET;
 	ret->ret = exp;
+	return ret;
+}
+irstm *mkirfunc(irfunc f) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = FUNC;
+	ret->func = f;
 	return ret;
 }

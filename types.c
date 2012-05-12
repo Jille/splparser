@@ -532,7 +532,7 @@ DESCEND_FUNC(while) {
 	done = getlabel();
 	bodylabel = getlabel();
 
-	return irconcat(mkirlabel(start), mkircjump(T_NE, cond, mkirconst(0), bodylabel, done), mkirseq_opt(mkirlabel(bodylabel), body), mkirjump(start), mkirlabel(done));
+	return irconcat(mkirlabel(start), mkircjump(T_NE, cond, mkirconst(0), bodylabel, done), mkirseq_opt(mkirlabel(bodylabel), body), mkirjump(mkirname(start)), mkirlabel(done));
 }
 
 DESCEND_FUNC(assignment) {

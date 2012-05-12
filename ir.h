@@ -23,7 +23,7 @@ struct irunit {
 			} binop;
 			irexp *mem;
 			struct {
-				irexp *func;
+				irfunc func;
 				struct irexplist *args;
 			} call;
 			struct {
@@ -79,10 +79,11 @@ irexp *mkirconst(int num);
 irexp *mkirname(irlabel label);
 irexp *mkirbinop(irop binop, irexp *left, irexp *right);
 irexp *mkirmem(irexp *a);
-irexp *mkircall(irexp *func, struct irexplist *args);
+irexp *mkircall(irfunc func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
 irstm *mkirexp(irexp *dst);
 irstm *mkirjump(irexp *addr);
 irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
 irstm *mkirlabel(irlabel label);
+irstm *mkirfunc(irfunc label);
 irstm *mkirret(irexp *ret);
