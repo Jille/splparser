@@ -18,7 +18,7 @@ done
 echo "#define TOKEN_MAX $N" >> tokens.h
 echo >> tokens.h
 echo >> tokens.h
-echo "static char *" >> tokens.h
+echo "static const char *" >> tokens.h
 echo "token_to_string(char token) {" >> tokens.h
 echo "	switch(token) {" >> tokens.h
 for i in $TOKENS; do
