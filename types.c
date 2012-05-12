@@ -610,7 +610,6 @@ DESCEND_FUNC(funcall) {
 
 DESCEND_FUNC(stmt) {
 	if(t->fst_child->type == 1 && t->fst_child->rule == tg->funcall_rule) {
-		printf("FunCall!\n");
 		return tc_descend_simple(tg, t, NULL);
 	} else {
 		return tc_descend_simple(tg, t, arg);
