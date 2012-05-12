@@ -628,8 +628,9 @@ DESCEND_FUNC(expression_simple) {
 	case T_WORD: {
 		struct variable *var = lookup_variable(tg, tg->curfunc, t->token->value.sval);
 		memcpy(res, var->type, sizeof(struct type));
+		irtemp v = var->temp;
 		free(var);
-		return mkirtemp(var->temp);
+		return mkirtemp(v);
 	}
 	case T_NUMBER:
 		res->type = T_INT;
