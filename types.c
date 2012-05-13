@@ -606,12 +606,12 @@ DESCEND_FUNC(funcall) {
 		free(binds);
 		binds = next;
 	}
-	return mkirexp(mkircall(f->func, args));
+	return mkircall(f->func, args);
 }
 
 DESCEND_FUNC(stmt) {
 	if(t->fst_child->type == 1 && t->fst_child->rule == tg->funcall_rule) {
-		return tc_descend_simple(tg, t, NULL);
+		return mkirexp(tc_descend_simple(tg, t, NULL));
 	} else {
 		return tc_descend_simple(tg, t, arg);
 	}
