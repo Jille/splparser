@@ -95,7 +95,26 @@ ir_exp_to_ssm(struct irunit *ir, int reg) {
 	nop->label = 0;
 	nop->instr = NOP;
 	nop->next = 0;
-	return nop;
+
+	switch(ir->type) {
+	case CONST:
+		return nop;
+	case NAME:
+		return nop;
+	case TEMP:
+		return nop;
+	case BINOP:
+		return nop;
+	case MEM:
+		return nop;
+	case CALL:
+		return nop;
+	case ESEQ:
+		return nop;
+	default:
+		printf("Didn't expect IR type %d here\n", ir->type);
+		assert(0 && "Didn't expect that IR type here");
+	}
 }
 
 struct ssmline *
