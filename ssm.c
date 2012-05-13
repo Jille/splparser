@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "ssm.h"
 #include "ir.h"
 
@@ -7,6 +8,10 @@ ir_to_ssm(struct irunit *ir) {
 }
 
 void
-show_ssm(struct ssmline *ssm, int indent) {
+write_ssm(struct ssmline *ssm, FILE *fd) {
+}
 
+void
+show_ssm(struct ssmline *ssm) {
+	write_ssm(ssm, stdout);
 }

@@ -14,5 +14,6 @@ struct ssmline {
 };
 
 struct ssmline *ir_to_ssm(struct irunit *ir);
-void show_ssm(struct ssmline *ssm, int indent);
+void write_ssm(struct ssmline *ssm, FILE *fd);
+void show_ssm(struct ssmline *ssm);
 
