@@ -190,11 +190,13 @@ ir_to_ssm(struct irunit *ir) {
 		}
 	case RET: ;
 		// TODO: clean up what FUNC added earlier
+		struct ssmline *exp = ir_exp_to_ssm(ir->ret, RR);
 		struct ssmline *res = malloc(sizeof(struct ssmline));
 		res->label = 0;
 		res->instr = SRET;
 		res->next = 0;
-		return res;
+		ssm_iterate_last(exp)->next = res;
+		return exp;
 	case EXP: // evaluate expression, throw away result
 		return ir_exp_to_ssm(ir->exp, 0);
 	default:
