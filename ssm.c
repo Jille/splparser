@@ -210,6 +210,16 @@ ir_to_ssm(struct irunit *ir) {
 		} else if(ir->seq.left->type == FUNC) {
 			struct ssmline *res = ir_to_ssm(ir->seq.right);
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func);
+			// TODO: reserve memory for locals: LINK, UNLINK
+			// look forward how many locals will be used in this function alone
+			// Add RET to the end of the function if it's not there yet
+			if(ssm_iterate_last(res)->instr != SRET) {
+				struct ssmline *ret = malloc(sizeof(struct ssmline));
+				ret->label = 0;
+				ret->instr = SRET;
+				ret->next = 0;
+				ssm_iterate_last(res)->next = ret;
+			}
 			return res;
 		} else {
 			struct ssmline *first = ir_to_ssm(ir->seq.left);
