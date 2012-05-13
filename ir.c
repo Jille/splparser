@@ -125,7 +125,9 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf(")");
 		break;
 	case JUMP:
-		printf("JUMP(todo)");
+		printf("JUMP(");
+		show_ir_tree(ir->jump.exp, indent);
+		printf(")");
 		break;
 	case CJUMP:
 		printf("CJUMP(todo)");
