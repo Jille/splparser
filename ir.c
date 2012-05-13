@@ -68,6 +68,7 @@ show_ir_tree(struct irunit *ir, int indent) {
 		print_indent(indent);
 		show_ir_tree(ir->binop.right, indent);
 		printf("\n");
+		indent--;
 		print_indent(indent);
 		printf(")");
 		break;
@@ -130,7 +131,23 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf(")");
 		break;
 	case CJUMP:
-		printf("CJUMP(todo)");
+		printf("CJUMP(\n");
+		++indent;
+		print_indent(indent);
+		show_ir_tree(ir->cjump.left, indent);
+		printf("\n");
+		print_indent(indent);
+		printf("%s\n", irop_to_string(ir->cjump.op, 1));
+		print_indent(indent);
+		show_ir_tree(ir->cjump.right, indent);
+		printf(",\n");
+		print_indent(indent);
+		printf("if true: %d\n", ir->cjump.iftrue);
+		print_indent(indent);
+		printf("if false: %d\n", ir->cjump.iffalse);
+		indent--;
+		print_indent(indent);
+		printf(")");
 		break;
 	case SEQ:
 		printf("SEQ(\n");
