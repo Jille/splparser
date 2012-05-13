@@ -95,6 +95,27 @@ ir_to_ssm(struct irunit *ir) {
 
 void
 write_ssm(struct ssmline *ssm, FILE *fd) {
+	while(ssm != NULL) {
+		if(ssm->label == 0) {
+			printf("         ");
+		} else {
+			printf("lbl%04d: ", ssm->label);
+		}
+
+		switch(ssm->instr) {
+		// no parameters
+		case NOP:  printf("NOP"); break;
+		case HALT: printf("HALT"); break;
+		// label parameters
+		case BRA:  printf("BRA lbl%04d", ssm->arg1); break;
+		default:
+			printf("Unknown instruction %d\n", ssm->instr);
+			assert(0);
+		}
+
+		printf("\n");
+		ssm = ssm->next;
+	}
 }
 
 void
