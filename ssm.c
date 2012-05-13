@@ -171,9 +171,13 @@ ir_to_ssm(struct irunit *ir) {
 			ssm_iterate_last(first)->next = second;
 			return first;
 		}
-	case RET: // Find the return pointer on the stack, jump to it
-		// TODO
-		return nop;
+	case RET: ;
+		// TODO: clean up what FUNC added earlier
+		struct ssmline *res = malloc(sizeof(struct ssmline));
+		res->label = 0;
+		res->instr = RET;
+		res->next = 0;
+		return res;
 	case EXP: // evaluate expression, throw away result
 		return ir_exp_to_ssm(ir->exp, 0);
 	default:
@@ -195,6 +199,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		// no parameters
 		case NOP:  printf("NOP"); break;
 		case HALT: printf("HALT"); break;
+		case RET:  printf("RET"); break;
 		// label parameters
 		case BRA:  printf("BRA lbl%04d", ssm->arg1); break;
 		default:
