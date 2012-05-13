@@ -10,6 +10,7 @@
 #include "parser.h"
 #include "types.h"
 #include "ir.h"
+#include "ssm.h"
 
 // #define VERBOSE_PARSER_DEBUG
 
@@ -42,9 +43,8 @@ main(int argc, char **argv) {
 	show_ir_tree(ir, 0);
 	printf("\n");
 
-	//printf("Pretty print:\n");
-	//struct pretty_print_state state = {0, 0};
-	//pretty_print(t, &state, gram);
+	struct ssmline *ssm = ir_to_ssm(ir);
+	show_ssm(ssm, 0);
 
 	free(t);
 	lazyarray_destroy(g);
