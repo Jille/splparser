@@ -114,8 +114,20 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	nop->next = 0;
 
 	switch(ir->type) {
-	case CONST:
-		return nop;
+	case CONST: ;
+		// LDC: pushes the inline constant on the stack
+		// STR: pops a value from the stack and stores it in a register
+		struct ssmline *ldc = malloc(sizeof(struct ssmline));
+		struct ssmline *str = malloc(sizeof(struct ssmline));
+		ldc->label = 0;
+		ldc->instr = SLDC;
+		ldc->arg1.intval = ir->value;
+		ldc->next = str;
+		str->label = 0;
+		str->instr = SSTR;
+		str->arg1.regval = reg;
+		str->next = 0;
+		return ldc;
 	case NAME:
 		return nop;
 	case TEMP:
