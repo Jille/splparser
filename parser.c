@@ -44,7 +44,7 @@ main(int argc, char **argv) {
 	printf("\n");
 
 	struct ssmline *ssm = ir_to_ssm(ir);
-	show_ssm(ssm, 0);
+	show_ssm(ssm);
 
 	free(t);
 	lazyarray_destroy(g);
