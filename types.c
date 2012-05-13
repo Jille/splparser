@@ -606,7 +606,7 @@ DESCEND_FUNC(funcall) {
 		free(binds);
 		binds = next;
 	}
-	return mkircall(f->func, args);
+	return mkirexp(mkircall(f->func, args));
 }
 
 DESCEND_FUNC(stmt) {
