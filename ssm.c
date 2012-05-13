@@ -136,8 +136,25 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		return nop;
 	case MEM:
 		return nop;
-	case CALL:
-		return nop;
+	case CALL: ;
+		// TODO: don't scratch the RR register
+		// TODO: parameters
+		// TODO: what if the called function is void / returns nothing?
+		struct ssmline *bsr = malloc(sizeof(struct ssmline));
+		bsr->label = 0;
+		bsr->instr = SBSR;
+		bsr->arg1.labelval = ir->call.func;
+		bsr->next = 0;
+		if(reg != RR && reg != NONE) {
+			struct ssmline *swprr = malloc(sizeof(struct ssmline));
+			swprr->label = 0;
+			swprr->instr = SSWPRR;
+			swprr->arg1.regval = RR;
+			swprr->arg2.regval = reg;
+			swprr->next = 0;
+			bsr->next = swprr;
+		}
+		return bsr;
 	case ESEQ:
 		return nop;
 	default:
@@ -235,8 +252,10 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		case SLDC:  printf("LDC %d", ssm->arg1.intval); break;
 		// label parameter
 		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
+		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;
 		// register parameter
 		case SSTR:  printf("STR %s", ssm_register_to_string(ssm->arg1.regval)); break;
+		case SSWPRR:printf("SWPRR %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break;
 		default:
 			printf("Unknown instruction %d\n", ssm->instr);
 			assert(0);
