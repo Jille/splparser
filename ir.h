@@ -1,3 +1,6 @@
+#ifndef IR_H
+#define IR_H
+
 typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
@@ -87,3 +90,5 @@ irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
 irstm *mkirlabel(irlabel label);
 irstm *mkirfunc(irfunc label);
 irstm *mkirret(irexp *ret);
+
+#endif
