@@ -6,7 +6,7 @@ typedef int ssmlabel;
 typedef int32_t ssmarg;
 
 struct ssmline {
-	ssmlabel label;
+	ssmlabel label; // <-- 0 means no label set
 	ssminstr instr;
 	ssmarg arg1;
 	ssmarg arg2;
