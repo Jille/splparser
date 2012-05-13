@@ -88,12 +88,29 @@ ssm_iterate_last(struct ssmline *line) {
 	return line;
 }
 
+const char *
+ssm_register_to_string(ssmregister reg) {
+	switch(reg) {
+	case PC: return "PC";
+	case SP: return "SP";
+	case MP: return "MP";
+	case RR: return "RR";
+	case R4: return "R4";
+	case R5: return "R5";
+	case R6: return "R6";
+	case R7: return "R7";
+	default:
+		printf("Unknown register %d\n", reg);
+		assert(0);
+	}
+}
+
 struct ssmline *
-ir_exp_to_ssm(struct irunit *ir, int reg) {
-	// if reg == 0, throw away result
+ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
+	// if reg == NONE, throw away result
 	struct ssmline *nop = malloc(sizeof(struct ssmline));
 	nop->label = 0;
-	nop->instr = NOP;
+	nop->instr = SNOP;
 	nop->next = 0;
 
 	switch(ir->type) {
@@ -123,7 +140,7 @@ ir_to_ssm(struct irunit *ir) {
 
 	struct ssmline *nop = malloc(sizeof(struct ssmline));
 	nop->label = 0;
-	nop->instr = NOP;
+	nop->instr = SNOP;
 	nop->next = 0;
 
 	switch(ir->type) {
@@ -175,7 +192,7 @@ ir_to_ssm(struct irunit *ir) {
 		// TODO: clean up what FUNC added earlier
 		struct ssmline *res = malloc(sizeof(struct ssmline));
 		res->label = 0;
-		res->instr = RET;
+		res->instr = SRET;
 		res->next = 0;
 		return res;
 	case EXP: // evaluate expression, throw away result
@@ -197,11 +214,15 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 
 		switch(ssm->instr) {
 		// no parameters
-		case NOP:  printf("NOP"); break;
-		case HALT: printf("HALT"); break;
-		case RET:  printf("RET"); break;
-		// label parameters
-		case BRA:  printf("BRA lbl%04d", ssm->arg1); break;
+		case SNOP:  printf("NOP"); break;
+		case SHALT: printf("HALT"); break;
+		case SRET:  printf("RET"); break;
+		// integer parameter
+		case SLDC:  printf("LDC %d", ssm->arg1.intval); break;
+		// label parameter
+		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
+		// register parameter
+		case SSTR:  printf("STR %s", ssm_register_to_string(ssm->arg1.regval)); break;
 		default:
 			printf("Unknown instruction %d\n", ssm->instr);
 			assert(0);

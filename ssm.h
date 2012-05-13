@@ -1,15 +1,23 @@
 #include <stdint.h>
 #include "ir.h"
 
-typedef enum { NOP, BRA, HALT } ssminstr;
+typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR } ssminstr;
+typedef enum { NONE = 0, PC = 1, SP, MP, RR, R4, R5, R6, R7 } ssmregister;
 typedef int ssmlabel;
-typedef int32_t ssmarg;
 
 struct ssmline {
 	ssmlabel label; // <-- 0 means no label set
 	ssminstr instr;
-	ssmarg arg1;
-	ssmarg arg2;
+	union {
+		int intval;
+		ssmlabel labelval;
+		ssmregister regval;
+	} arg1;
+	union {
+		int intval;
+		ssmlabel labelval;
+		ssmregister regval;
+	} arg2;
 	struct ssmline *next;
 };
 
