@@ -175,6 +175,12 @@ show_ir_tree(struct irunit *ir, int indent) {
 		show_ir_tree(ir->ret, indent);
 		printf(")");
 		break;
+	case TRAP:
+		printf("TRAP(%d)", ir->syscall);
+		break;
+	case HALT:
+		printf("HALT");
+		break;
 	default:
 		assert(0 && "Unknown irtype");
 	}
@@ -331,5 +337,16 @@ irstm *mkirfunc(irfunc f, int nvars) {
 	ret->type = FUNC;
 	ret->func.funcid = f;
 	ret->func.vars = nvars;
+	return ret;
+}
+irstm *mkirtrap(int syscall) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = TRAP;
+	ret->syscall = syscall;
+	return ret;
+}
+irstm *mkirhalt() {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = HALT;
 	return ret;
 }

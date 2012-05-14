@@ -294,6 +294,13 @@ DESCEND_FUNC(simple_seq) {
 	return ret;
 }
 
+DESCEND_FUNC(init) {
+	struct irunit *program = tc_descend(tg, t->fst_child, arg);
+	struct tc_func *f = lookup_function(tg, "main");
+	// XXX check whether main's (return)type is correct
+	return irconcat(mkirexp(mkircall(f->func, NULL)), mkirtrap(0), mkirhalt(), program, NULL);
+}
+
 DESCEND_FUNC(rettype) {
 	struct type **typepp = arg;
 
@@ -834,5 +841,6 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Stmt, stmt);
 	SET_RULE_HANDLER(Stmt+, simple_seq);
 	SET_RULE_HANDLER(Decl+, simple_seq);
+	SET_RULE_HANDLER(S, init);
 	return tc_descend(&tg, t, NULL);
 }

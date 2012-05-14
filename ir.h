@@ -1,7 +1,7 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET } irtype;
+typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
 struct irunit;
@@ -62,6 +62,7 @@ struct irunit {
 				int vars;
 			} func;
 			irexp *ret;
+			int syscall;
 		};
 	};
 };
@@ -93,5 +94,7 @@ irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nvars);
+irstm *mkirtrap(int syscall);
+irstm *mkirhalt(void);
 
 #endif

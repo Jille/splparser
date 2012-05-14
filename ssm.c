@@ -183,6 +183,7 @@ ssm_return(irexp *retval) {
 
 struct ssmline *
 ir_to_ssm(struct irunit *ir) {
+	struct ssmline *res;
 	assert(ir != NULL);
 
 	struct ssmline *nop = malloc(sizeof(struct ssmline));
@@ -222,13 +223,13 @@ ir_to_ssm(struct irunit *ir) {
 		// Unless "left" is a label or function declaration, in which
 		// case it simply sets the label of "right"
 		if(ir->seq.left->type == LABEL) {
-			struct ssmline *res = ir_to_ssm(ir->seq.right);
+			res = ir_to_ssm(ir->seq.right);
 			res->label = get_ssmlabel_from_irlabel(ir->seq.left->label);
 			return res;
 		} else if(ir->seq.left->type == FUNC) {
 			// reserve memory for locals: LINK, UNLINK
 			// look forward how many locals will be used in this function alone
-			struct ssmline *res = malloc(sizeof(struct ssmline));
+			res = malloc(sizeof(struct ssmline));
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
 			res->instr = SLINK;
 			res->arg1.intval = ir->seq.left->func.vars;
@@ -248,6 +249,19 @@ ir_to_ssm(struct irunit *ir) {
 		return ssm_return(ir->ret);
 	case EXP: // evaluate expression, throw away result
 		return ir_exp_to_ssm(ir->exp, 0);
+	case TRAP:
+		res = malloc(sizeof(struct ssmline));
+		res->label = 0;
+		res->instr = STRAP;
+		res->arg1.intval = ir->syscall;
+		res->next = NULL;
+		return res;
+	case HALT:
+		res = malloc(sizeof(struct ssmline));
+		res->label = 0;
+		res->instr = SHALT;
+		res->next = NULL;
+		return res;
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");
@@ -272,6 +286,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		// integer parameter
 		case SLDC:  printf("LDC %d", ssm->arg1.intval); break;
 		case SLINK:  printf("LINK %d", ssm->arg1.intval); break;
+		case STRAP:  printf("TRAP %d", ssm->arg1.intval); break;
 		// label parameter
 		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
 		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;
