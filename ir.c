@@ -168,7 +168,7 @@ show_ir_tree(struct irunit *ir, int indent) {
 		free(lbl);
 		break;
 	case FUNC:
-		printf("FUNC(%d)", ir->func);
+		printf("FUNC(%d)", ir->func.funcid);
 		break;
 	case RET:
 		printf("RET(");
@@ -326,9 +326,10 @@ irstm *mkirret(irexp *exp) {
 	ret->ret = exp;
 	return ret;
 }
-irstm *mkirfunc(irfunc f) {
+irstm *mkirfunc(irfunc f, int nvars) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = FUNC;
-	ret->func = f;
+	ret->func.funcid = f;
+	ret->func.vars = nvars;
 	return ret;
 }

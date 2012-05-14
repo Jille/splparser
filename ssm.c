@@ -164,6 +164,23 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	}
 }
 
+static struct ssmline *
+ssm_return(irexp *retval) {
+	struct ssmline *res = malloc(sizeof(struct ssmline));
+	res->label = 0;
+	res->instr = SUNLINK;
+	res->next = malloc(sizeof(struct ssmline));
+	res->next->label = 0;
+	res->next->instr = SRET;
+	res->next->next = NULL;
+	if(retval != NULL) {
+		struct ssmline *exp = ir_exp_to_ssm(retval, RR);
+		ssm_iterate_last(exp)->next = res;
+		return exp;
+	}
+	return res;
+}
+
 struct ssmline *
 ir_to_ssm(struct irunit *ir) {
 	assert(ir != NULL);
@@ -209,17 +226,16 @@ ir_to_ssm(struct irunit *ir) {
 			res->label = get_ssmlabel_from_irlabel(ir->seq.left->label);
 			return res;
 		} else if(ir->seq.left->type == FUNC) {
-			struct ssmline *res = ir_to_ssm(ir->seq.right);
-			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func);
-			// TODO: reserve memory for locals: LINK, UNLINK
+			// reserve memory for locals: LINK, UNLINK
 			// look forward how many locals will be used in this function alone
+			struct ssmline *res = malloc(sizeof(struct ssmline));
+			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
+			res->instr = SLINK;
+			res->arg1 = ir->seq.left->func.args;
+			res->next = ir_to_ssm(ir->seq.right);
 			// Add RET to the end of the function if it's not there yet
 			if(ssm_iterate_last(res)->instr != SRET) {
-				struct ssmline *ret = malloc(sizeof(struct ssmline));
-				ret->label = 0;
-				ret->instr = SRET;
-				ret->next = NULL;
-				ssm_iterate_last(res)->next = ret;
+				ssm_iterate_last(res)->next = ssm_return(NULL);
 			}
 			return res;
 		} else {
@@ -228,15 +244,8 @@ ir_to_ssm(struct irunit *ir) {
 			ssm_iterate_last(first)->next = second;
 			return first;
 		}
-	case RET: ;
-		// TODO: clean up what FUNC added earlier
-		struct ssmline *exp = ir_exp_to_ssm(ir->ret, RR);
-		struct ssmline *res = malloc(sizeof(struct ssmline));
-		res->label = 0;
-		res->instr = SRET;
-		res->next = NULL;
-		ssm_iterate_last(exp)->next = res;
-		return exp;
+	case RET:
+		return ssm_return(ir->ret);
 	case EXP: // evaluate expression, throw away result
 		return ir_exp_to_ssm(ir->exp, 0);
 	default:

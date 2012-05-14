@@ -57,7 +57,10 @@ struct irunit {
 				irstm *right;
 			} seq;
 			irlabel label;
-			irfunc func;
+			struct {
+				irfunc funcid;
+				int vars;
+			} func;
 			irexp *ret;
 		};
 	};
@@ -88,7 +91,7 @@ irstm *mkirexp(irexp *dst);
 irstm *mkirjump(irexp *addr);
 irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
 irstm *mkirlabel(irlabel label);
-irstm *mkirfunc(irfunc label);
 irstm *mkirret(irexp *ret);
+irstm *mkirfunc(irfunc f, int nvars);
 
 #endif

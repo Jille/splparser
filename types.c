@@ -477,7 +477,13 @@ DESCEND_FUNC(fundecl) {
 	tg->curfunc = NULL;
 
 	fdata->func = getfunc();
-	return mkirseq(mkirfunc(fdata->func), body);
+	int nvars = 0;
+	struct vardecl *v = fdata->decls;
+	while(v != NULL) {
+		nvars++;
+		v = v->next;
+	}
+	return mkirseq(mkirfunc(fdata->func, nvars), body);
 }
 
 DESCEND_FUNC(if) {
