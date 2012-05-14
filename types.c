@@ -506,7 +506,7 @@ DESCEND_FUNC(if) {
 	}
 	irlabel true = getlabel();
 	irlabel false = getlabel();
-	return irconcat(mkircjump(T_NE, cond, mkirconst(0), true, false), mkirseq_opt(mkirlabel(true), iftrue), mkirseq_opt(mkirlabel(false), iffalse));
+	return irconcat(mkircjump(T_NE, cond, mkirconst(0), true, false), mkirseq_opt(mkirlabel(true), iftrue), mkirseq_opt(mkirlabel(false), iffalse), NULL);
 }
 
 DESCEND_FUNC(while) {
@@ -533,7 +533,7 @@ DESCEND_FUNC(while) {
 	done = getlabel();
 	bodylabel = getlabel();
 
-	return irconcat(mkirlabel(start), mkircjump(T_NE, cond, mkirconst(0), bodylabel, done), mkirseq_opt(mkirlabel(bodylabel), body), mkirjump(mkirname(start)), mkirlabel(done));
+	return irconcat(mkirlabel(start), mkircjump(T_NE, cond, mkirconst(0), bodylabel, done), mkirseq_opt(mkirlabel(bodylabel), body), mkirjump(mkirname(start)), mkirlabel(done), NULL);
 }
 
 DESCEND_FUNC(assignment) {
