@@ -21,7 +21,7 @@ static struct ssmlabelmapping *ssmlabels = NULL;
 static struct ssmfuncmapping *ssmfuncs = NULL;
 static ssmlabel ssmlabelptr = 0;
 
-ssmlabel
+static ssmlabel
 get_ssmlabel_from_irlabel(irlabel ir) {
 	if(ssmlabels != NULL && ssmlabels->ir == ir)
 		return ssmlabels->ssm;
@@ -50,7 +50,7 @@ get_ssmlabel_from_irlabel(irlabel ir) {
 	return newthis->ssm;
 }
 
-ssmlabel
+static ssmlabel
 get_ssmlabel_from_irfunc(irfunc ir) {
 	if(ssmfuncs != NULL && ssmfuncs->ir == ir)
 		return ssmfuncs->ssm;
@@ -79,7 +79,7 @@ get_ssmlabel_from_irfunc(irfunc ir) {
 	return newthis->ssm;
 }
 
-struct ssmline *
+static struct ssmline *
 ssm_iterate_last(struct ssmline *line) {
 	if(line == NULL)
 		return NULL;
@@ -88,7 +88,7 @@ ssm_iterate_last(struct ssmline *line) {
 	return line;
 }
 
-const char *
+static const char *
 ssm_register_to_string(ssmregister reg) {
 	switch(reg) {
 	case PC: return "PC";
@@ -105,7 +105,7 @@ ssm_register_to_string(ssmregister reg) {
 	}
 }
 
-struct ssmline *
+static struct ssmline *
 ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	// if reg == NONE, throw away result
 	// if ret == STACK, push it on the stack
