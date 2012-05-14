@@ -217,7 +217,7 @@ ir_to_ssm(struct irunit *ir) {
 				struct ssmline *ret = malloc(sizeof(struct ssmline));
 				ret->label = 0;
 				ret->instr = SRET;
-				ret->next = 0;
+				ret->next = NULL;
 				ssm_iterate_last(res)->next = ret;
 			}
 			return res;
