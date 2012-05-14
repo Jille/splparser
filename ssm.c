@@ -106,6 +106,47 @@ ssm_register_to_string(ssmregister reg) {
 }
 
 static struct ssmline *
+ssm_move_data(ssmregister dst, ssmregister src) {
+	// XXX met dst=NONE en src=STACK wel poppen?
+	if(dst == NONE || dst == src) {
+		return NULL;
+	}
+	switch(src) {
+		case STACK: ;
+			struct ssmline *str = malloc(sizeof(struct ssmline));
+			str->label = 0;
+			// [2012-08-14 jille] Is STR hier de goede instructie voor?
+			str->instr = SSTR;
+			str->arg1.regval = dst;
+			str->next = NULL;
+			return str;
+		case PC:
+		case SP:
+		case MP:
+		case RR:
+		case R4:
+		case R5:
+		case R6:
+		case R7:
+			if(dst == STACK) {
+				assert(!"yet implemented");
+			} else {
+				struct ssmline *swprr = malloc(sizeof(struct ssmline));
+				swprr->label = 0;
+				swprr->instr = SSWPRR; // XXX LDRR is een copy ipv swap, dus beter?
+				swprr->arg1.regval = dst;
+				swprr->arg2.regval = src;
+				swprr->next = NULL;
+				return swprr;
+			}
+			break;
+		case NONE:
+			assert(!"reached");
+	}
+	assert(!"reached");
+}
+
+static struct ssmline *
 ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	// if reg == NONE, throw away result
 	// if ret == STACK, push it on the stack
@@ -120,21 +161,11 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			return nop;
 		}
 		// LDC: pushes the inline constant on the stack
-		// STR: pops a value from the stack and stores it in a register
 		struct ssmline *ldc = malloc(sizeof(struct ssmline));
-		struct ssmline *str = malloc(sizeof(struct ssmline));
 		ldc->label = 0;
 		ldc->instr = SLDC;
 		ldc->arg1.intval = ir->value;
-		if(reg != STACK) {
-			ldc->next = str;
-			str->label = 0;
-			str->instr = SSTR;
-			str->arg1.regval = reg;
-			str->next = NULL;
-		} else {
-			ldc->next = NULL;
-		}
+		ldc->next = ssm_move_data(reg, STACK);
 		return ldc;
 	case NAME:
 		return nop;
@@ -148,22 +179,11 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		// TODO: don't scratch the RR register
 		// TODO: parameters
 		// TODO: what if the called function is void / returns nothing?
-		// TODO: Support reg == STACK
 		struct ssmline *bsr = malloc(sizeof(struct ssmline));
 		bsr->label = 0;
 		bsr->instr = SBSR;
 		bsr->arg1.labelval = ir->call.func;
-		if(reg != RR && reg != NONE) {
-			struct ssmline *swprr = malloc(sizeof(struct ssmline));
-			swprr->label = 0;
-			swprr->instr = SSWPRR;
-			swprr->arg1.regval = RR;
-			swprr->arg2.regval = reg;
-			swprr->next = NULL;
-			bsr->next = swprr;
-		} else {
-			bsr->next = NULL;
-		}
+		bsr->next = ssm_move_data(reg, RR);
 		return bsr;
 	case ESEQ:
 		return nop;
