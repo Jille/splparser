@@ -126,7 +126,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		str->label = 0;
 		str->instr = SSTR;
 		str->arg1.regval = reg;
-		str->next = 0;
+		str->next = NULL;
 		return ldc;
 	case NAME:
 		return nop;
@@ -144,14 +144,14 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		bsr->label = 0;
 		bsr->instr = SBSR;
 		bsr->arg1.labelval = ir->call.func;
-		bsr->next = 0;
+		bsr->next = NULL;
 		if(reg != RR && reg != NONE) {
 			struct ssmline *swprr = malloc(sizeof(struct ssmline));
 			swprr->label = 0;
 			swprr->instr = SSWPRR;
 			swprr->arg1.regval = RR;
 			swprr->arg2.regval = reg;
-			swprr->next = 0;
+			swprr->next = NULL;
 			bsr->next = swprr;
 		}
 		return bsr;
@@ -170,7 +170,7 @@ ir_to_ssm(struct irunit *ir) {
 	struct ssmline *nop = malloc(sizeof(struct ssmline));
 	nop->label = 0;
 	nop->instr = SNOP;
-	nop->next = 0;
+	nop->next = NULL;
 
 	switch(ir->type) {
 	case MOVE: // Evaluate src and store the result in dst (TEMP or MEM)
@@ -233,7 +233,7 @@ ir_to_ssm(struct irunit *ir) {
 		struct ssmline *res = malloc(sizeof(struct ssmline));
 		res->label = 0;
 		res->instr = SRET;
-		res->next = 0;
+		res->next = NULL;
 		ssm_iterate_last(exp)->next = res;
 		return exp;
 	case EXP: // evaluate expression, throw away result
