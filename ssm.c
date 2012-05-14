@@ -144,7 +144,6 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		bsr->label = 0;
 		bsr->instr = SBSR;
 		bsr->arg1.labelval = ir->call.func;
-		bsr->next = NULL;
 		if(reg != RR && reg != NONE) {
 			struct ssmline *swprr = malloc(sizeof(struct ssmline));
 			swprr->label = 0;
@@ -153,6 +152,8 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			swprr->arg2.regval = reg;
 			swprr->next = NULL;
 			bsr->next = swprr;
+		} else {
+			bsr->next = NULL;
 		}
 		return bsr;
 	case ESEQ:
