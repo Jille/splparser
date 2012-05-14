@@ -46,10 +46,7 @@ struct irunit {
 				// LabelList targets ..?
 			} jump;
 			struct {
-				irop op;
-				irexp *left;
-				irexp *right;
-				irlabel iftrue;
+				irexp *exp;
 				irlabel iffalse;
 			} cjump;
 			struct {
@@ -90,7 +87,7 @@ irexp *mkircall(irfunc func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
 irstm *mkirexp(irexp *exp);
 irstm *mkirjump(irexp *addr);
-irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
+irstm *mkircjump(irexp *exp, irlabel f);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nvars);

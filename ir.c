@@ -134,15 +134,8 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("CJUMP(\n");
 		++indent;
 		print_indent(indent);
-		show_ir_tree(ir->cjump.left, indent);
-		printf("\n");
-		print_indent(indent);
-		printf("%s\n", irop_to_string(ir->cjump.op, 1));
-		print_indent(indent);
-		show_ir_tree(ir->cjump.right, indent);
-		printf(",\n");
-		print_indent(indent);
-		printf("if true: %d\n", ir->cjump.iftrue);
+		show_ir_tree(ir->cjump.exp, indent);
+		printf("\n,\n");
 		print_indent(indent);
 		printf("if false: %d\n", ir->cjump.iffalse);
 		indent--;
@@ -310,13 +303,13 @@ irstm *mkirjump(irexp *addr /*, labellist targets */) {
 	ret->exp = addr;
 	return ret;
 }
-irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f) {
+irstm *mkircjump(irexp *exp, irlabel f) {
+	// XXX eigenlijk is het best mooi om cjump te definieren als:
+	// CJUMP(irexp, ifstm iftrue, ifstm iffalse)
+	// De assembler kan dat alle code op de goede plekken zetten en waar nodig labels maken
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = CJUMP;
-	ret->cjump.op = relop;
-	ret->cjump.left = left;
-	ret->cjump.right = right;
-	ret->cjump.iftrue = t;
+	ret->cjump.exp = exp;
 	ret->cjump.iffalse = f;
 	return ret;
 }

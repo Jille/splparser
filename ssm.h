@@ -1,8 +1,9 @@
 #include <stdint.h>
 #include "ir.h"
 
-typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR, SBSR, SSWPRR, SLINK, SUNLINK, STRAP } ssminstr;
-typedef enum { NONE = 0, PC = 1, SP, MP, RR, R4, R5, R6, R7 } ssmregister;
+typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR, SBSR, SSWPRR, SLINK, SUNLINK, STRAP, SBRF } ssminstr;
+// XXX [2012-05-14 jille] Waarom zijn NONE en PC hardcoded?
+typedef enum { NONE = 0, PC = 1, STACK, SP, MP, RR, R4, R5, R6, R7 } ssmregister;
 typedef int ssmlabel;
 
 struct ssmline {

@@ -108,13 +108,17 @@ ssm_register_to_string(ssmregister reg) {
 struct ssmline *
 ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	// if reg == NONE, throw away result
+	// if ret == STACK, push it on the stack
 	struct ssmline *nop = malloc(sizeof(struct ssmline));
 	nop->label = 0;
 	nop->instr = SNOP;
 	nop->next = 0;
 
 	switch(ir->type) {
-	case CONST: ;
+	case CONST:
+		if(reg == NONE) {
+			return nop;
+		}
 		// LDC: pushes the inline constant on the stack
 		// STR: pops a value from the stack and stores it in a register
 		struct ssmline *ldc = malloc(sizeof(struct ssmline));
@@ -122,11 +126,15 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		ldc->label = 0;
 		ldc->instr = SLDC;
 		ldc->arg1.intval = ir->value;
-		ldc->next = str;
-		str->label = 0;
-		str->instr = SSTR;
-		str->arg1.regval = reg;
-		str->next = NULL;
+		if(reg != STACK) {
+			ldc->next = str;
+			str->label = 0;
+			str->instr = SSTR;
+			str->arg1.regval = reg;
+			str->next = NULL;
+		} else {
+			ldc->next = NULL;
+		}
 		return ldc;
 	case NAME:
 		return nop;
@@ -140,6 +148,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		// TODO: don't scratch the RR register
 		// TODO: parameters
 		// TODO: what if the called function is void / returns nothing?
+		// TODO: Support reg == STACK
 		struct ssmline *bsr = malloc(sizeof(struct ssmline));
 		bsr->label = 0;
 		bsr->instr = SBSR;
@@ -212,13 +221,14 @@ ir_to_ssm(struct irunit *ir) {
 		//show_ir_tree(ir->jump.exp, indent);
 		return nop;
 	case CJUMP: // jump to label as result of relop
-		/*show_ir_tree(ir->cjump.left, indent);
-		printf("%s\n", irop_to_string(ir->cjump.op, 1));
-		show_ir_tree(ir->cjump.right, indent);
-		printf("if true: %d\n", ir->cjump.iftrue);
-		printf("if false: %d\n", ir->cjump.iffalse);
-		break;*/
-		return nop;
+		res = malloc(sizeof(struct ssmline));
+		res->label = 0;
+		res->instr = SBRF;
+		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->cjump.iffalse);
+		res->next = NULL;
+		struct ssmline *exp = ir_exp_to_ssm(ir->cjump.exp, STACK);
+		ssm_iterate_last(exp)->next = res;
+		return exp;
 	case SEQ: // Statement "left" followed by "right"
 		// Unless "left" is a label or function declaration, in which
 		// case it simply sets the label of "right"
@@ -290,6 +300,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		// label parameter
 		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
 		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;
+		case SBRF:  printf("BRF lbl%04d", ssm->arg1.labelval); break;
 		// register parameter
 		case SSTR:  printf("STR %s", ssm_register_to_string(ssm->arg1.regval)); break;
 		case SSWPRR:printf("SWPRR %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break;
