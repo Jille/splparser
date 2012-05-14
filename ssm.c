@@ -231,7 +231,7 @@ ir_to_ssm(struct irunit *ir) {
 			struct ssmline *res = malloc(sizeof(struct ssmline));
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
 			res->instr = SLINK;
-			res->arg1 = ir->seq.left->func.args;
+			res->arg1.intval = ir->seq.left->func.vars;
 			res->next = ir_to_ssm(ir->seq.right);
 			// Add RET to the end of the function if it's not there yet
 			if(ssm_iterate_last(res)->instr != SRET) {
@@ -268,8 +268,10 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		case SNOP:  printf("NOP"); break;
 		case SHALT: printf("HALT"); break;
 		case SRET:  printf("RET"); break;
+		case SUNLINK:  printf("UNLINK"); break;
 		// integer parameter
 		case SLDC:  printf("LDC %d", ssm->arg1.intval); break;
+		case SLINK:  printf("LINK %d", ssm->arg1.intval); break;
 		// label parameter
 		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
 		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;

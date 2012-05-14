@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "ir.h"
 
-typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR, SBSR, SSWPRR } ssminstr;
+typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR, SBSR, SSWPRR, SLINK, SUNLINK } ssminstr;
 typedef enum { NONE = 0, PC = 1, SP, MP, RR, R4, R5, R6, R7 } ssmregister;
 typedef int ssmlabel;
 
