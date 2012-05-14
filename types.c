@@ -13,7 +13,6 @@
 struct vardecl {
 	char *name;
 	struct type *type;
-	synt_tree *initial;
 	irtemp temp;
 	struct vardecl *next;
 };
@@ -397,6 +396,7 @@ DESCEND_FUNC(vardecl) {
 	struct vardecl *vd = malloc(sizeof(struct vardecl));
 	synt_tree *chld = t->fst_child;
 	struct type datatype;
+	struct irunit *initexp;
 
 	vd->next = NULL;
 	tc_descend(tg, chld, &vd->type);
@@ -406,9 +406,8 @@ DESCEND_FUNC(vardecl) {
 	chld = chld->next;
 	assert(chld->token->type == '=');
 	chld = chld->next;
-	tc_descend(tg, chld, &datatype);
+	initexp = tc_descend(tg, chld, &datatype);
 	unify_types(tg, vd->type, &datatype, NULL);
-	vd->initial = chld;
 	chld = chld->next;
 	assert(chld->token->type == ';');
 
@@ -418,6 +417,9 @@ DESCEND_FUNC(vardecl) {
 		struct tc_func *fdata = arg;
 		*fdata->decls_last = vd;
 		fdata->decls_last = &vd->next;
+
+		// XXX Bug: dit stuk komt niet in de IR-tree, dat moet natuurlijk wel
+		return mkirmove(mkirtemp(vd->temp), initexp);
 	} else {
 		*tg->decls_last = vd;
 		tg->decls_last = &vd->next;
@@ -839,6 +841,7 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Stmt, stmt);
 	SET_RULE_HANDLER(Stmt+, simple_seq);
 	SET_RULE_HANDLER(Decl+, simple_seq);
+	SET_RULE_HANDLER(VarDecl+, simple_seq);
 	SET_RULE_HANDLER(S, init);
 	return tc_descend(&tg, t, NULL);
 }
