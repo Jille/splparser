@@ -418,7 +418,6 @@ DESCEND_FUNC(vardecl) {
 		*fdata->decls_last = vd;
 		fdata->decls_last = &vd->next;
 
-		// XXX Bug: dit stuk komt niet in de IR-tree, dat moet natuurlijk wel
 		return mkirmove(mkirtemp(vd->temp), initexp);
 	} else {
 		*tg->decls_last = vd;
@@ -453,7 +452,7 @@ DESCEND_FUNC(fundecl) {
 	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
 	synt_tree *chld = t->fst_child;
 	tg->curfunc = fdata;
-	irstm *body;
+	irstm *body = NULL;
 
 	fdata->decls_last = &fdata->decls;
 	fdata->stmts_last = &fdata->stmts;
@@ -479,7 +478,14 @@ DESCEND_FUNC(fundecl) {
 
 	do {
 		// vardecls en stmts
-		body = tc_descend(tg, chld, fdata);
+		struct irunit *res = tc_descend(tg, chld, fdata);
+		if(res != NULL) {
+			if(body == NULL) {
+				body = res;
+			} else {
+				body = mkirseq(body, res);
+			}
+		}
 		chld = chld->next;
 	} while(chld->token->type != '}');
 
