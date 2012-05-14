@@ -87,11 +87,11 @@ irexp *mkirbinop(irop binop, irexp *left, irexp *right);
 irexp *mkirmem(irexp *a);
 irexp *mkircall(irfunc func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
-irstm *mkirexp(irexp *dst);
+irstm *mkirexp(irexp *exp);
 irstm *mkirjump(irexp *addr);
 irstm *mkircjump(irop relop, irexp *left, irexp *right, irlabel t, irlabel f);
 irstm *mkirlabel(irlabel label);
-irstm *mkirret(irexp *ret);
+irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nvars);
 
 #endif
