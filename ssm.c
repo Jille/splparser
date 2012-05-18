@@ -242,8 +242,10 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		return ret;
 	}
 	case CALL: ;
-		// TODO: don't scratch the RR register (push RR, CALL, SWAPR?)
-		// TODO: what if the called function is void / returns nothing?
+		// [2012-05-xx sjors] don't scratch the RR register (push RR, CALL, SWAPR?)
+		// [2012-05-18 jille] Dat kan wel denk ik eigenlijk. Verder, als we dat niet zouden willen kunnen waarschijnlijk beter onze callingconventie aanpassen dat we via de stack returnen
+		// [2012-05-xx sjors]: what if the called function is void / returns nothing?
+		// [2012-05-18 jille] Dan returnen we stiekem 0
 		struct irexplist *args = ir->call.args;
 		struct ssmline *ret = NULL, *prev;
 		int nargs = 0;
@@ -271,7 +273,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		}
 		return bsr;
 	case ESEQ:
-		nop->comment = "exp_to_ssm: ESEQ";
+		nop->comment = "ESEQ";
 		return nop;
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
