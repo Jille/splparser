@@ -20,6 +20,7 @@ struct ssmline {
 		ssmlabel labelval;
 		ssmregister regval;
 	} arg2;
+	char *comment;
 	struct ssmline *next;
 };
 

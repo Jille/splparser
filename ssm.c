@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
@@ -26,8 +27,15 @@ alloc_ssmline(ssminstr instr) {
 	struct ssmline *ssm = malloc(sizeof(struct ssmline));
 	ssm->label = 0;
 	ssm->instr = instr;
+	ssm->comment = NULL;
 	ssm->next = NULL;
 	return ssm;
+}
+
+static void
+ssmline_set_comment_ir(struct ssmline *ssm, struct irunit *ir) {
+	// XXX show_ir_tree() ombouwen dat hij een string returned
+	asprintf(&ssm->comment, "IR %d", ir->type);
 }
 
 static ssmlabel
@@ -234,6 +242,7 @@ ir_to_ssm(struct irunit *ir) {
 			default:
 				assert(!"reached");
 		}
+		exp->comment = "Move";
 		return exp;
 	case JUMP: // jump to address as result of expression
 		//show_ir_tree(ir->jump.exp, indent);
@@ -316,6 +325,10 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		default:
 			printf("Unknown instruction %d\n", ssm->instr);
 			assert(0);
+		}
+
+		if(ssm->comment) {
+			printf(" ; %s", ssm->comment);
 		}
 
 		printf("\n");
