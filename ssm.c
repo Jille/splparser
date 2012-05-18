@@ -319,8 +319,10 @@ ir_to_ssm(struct irunit *ir) {
 				return nop;
 				break;
 			case FARG:
-				nop->comment = "Move to FARG";
-				return nop;
+				ret = alloc_ssmline(SSTL);
+				ret->arg1.intval = -args_for_current_function + ir->move.dst->farg - 2;
+				asprintf(&ret->comment, "Store in FARG %d", ir->move.dst->farg);
+				ssm_iterate_last(exp)->next = ret;
 				break;
 			default:
 				assert(!"reached");
