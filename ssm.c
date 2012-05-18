@@ -217,19 +217,21 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	}
 	case LOCAL: {
 		struct ssmline *ret = alloc_ssmline(SLDL);
-		ret->arg1.intval = -ir->local;
+		ret->arg1.intval = ir->local + 1;
 		ret->next = ssm_move_data(reg, STACK);
+		asprintf(&ret->comment, "Fetch local %d", ir->local);
 		return ret;
 	}
 	case GLOBAL:
-		nop->comment = "exp_to_ssm: fetch GLOBAL";
+		nop->comment = "fetch GLOBAL";
 		return nop;
 	case FARG: {
 		struct ssmline *ret = alloc_ssmline(SLDL);
 		assert(args_for_current_function > 0);
-		ret->arg1.intval = args_for_current_function - ir->farg - 2; // XXX klopt dit?
+		ret->arg1.intval = -args_for_current_function + ir->farg - 2; // XXX klopt dit?
 		ret->next = ssm_move_data(reg, STACK);
 		ret->comment = "fetch FARG";
+		asprintf(&ret->comment, "Fetch FARG %d", ir->farg);
 		return ret;
 	}
 	case CALL: ;
@@ -299,7 +301,8 @@ ir_to_ssm(struct irunit *ir) {
 			case LOCAL:
 				// Store the result in a local variable
 				ret = alloc_ssmline(SSTL);
-				ret->arg1.labelval = -ir->move.dst->local;
+				ret->arg1.labelval = ir->move.dst->local + 1;
+				asprintf(&ret->comment, "Store in local %d", ir->move.dst->local);
 				ssm_iterate_last(exp)->next = ret;
 				break;
 			case GLOBAL:

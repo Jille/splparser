@@ -443,14 +443,14 @@ DESCEND_FUNC(vardecl) {
 		struct tc_func *fdata = arg;
 		*fdata->decls_last = vd;
 		fdata->decls_last = &vd->next;
-		vd->local = ++fdata->nlocals;
+		vd->local = fdata->nlocals++;
 
 		return mkirmove(mkirlocal(vd->local), initexp);
 	} else {
 		*tg->decls_last = vd;
 		tg->decls_last = &vd->next;
 
-		vd->global = ++tg->nglobals;
+		vd->global = tg->nglobals++;
 		return mkirmove(mkirglobal(vd->global), initexp);
 	}
 	return NULL;
