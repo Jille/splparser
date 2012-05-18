@@ -522,7 +522,7 @@ DESCEND_FUNC(fundecl) {
 	tg->curfunc = NULL;
 
 	fdata->func = getfunc();
-	return mkirseq(mkirfunc(fdata->func, fdata->nlocals), body);
+	return mkirseq(mkirfunc(fdata->func, fdata->nargs, fdata->nlocals), body);
 }
 
 DESCEND_FUNC(if) {
@@ -682,7 +682,7 @@ DESCEND_FUNC(expression_simple) {
 	case T_FALSE:
 	case T_TRUE:
 		res->type = T_BOOL;
-		return mkirconst(t->token->value.bval);
+		return mkirconst(t->token->type == T_TRUE);
 	default:
 		fprintf(stderr, "Unexpected token type in Expression: %s\n", token_to_string(t->token->type));
 		abort();

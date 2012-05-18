@@ -177,21 +177,43 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		return nop;
 	case BINOP:
 		return nop;
-	case LOCAL: ;
+	case LOCAL: {
 		struct ssmline *ret = alloc_ssmline(SLDL);
 		ret->arg1.labelval = -ir->local;
 		ret->next = ssm_move_data(reg, STACK);
 		return ret;
+	}
 	case GLOBAL:
 	case FARG:
 		return nop;
 	case CALL: ;
 		// TODO: don't scratch the RR register (push RR, CALL, SWAPR?)
-		// TODO: parameters
 		// TODO: what if the called function is void / returns nothing?
+		struct irexplist *args = ir->call.args;
+		struct ssmline *ret = NULL, *prev;
+		int nargs = 0;
+		while(args != NULL) {
+			struct ssmline *exp = ir_exp_to_ssm(args->exp, STACK);
+			if(ret == NULL) {
+				ret = exp;
+			} else {
+				ssm_iterate_last(prev)->next = exp;
+			}
+			prev = exp;
+			args = args->next;
+			nargs++;
+		}
 		struct ssmline *bsr = alloc_ssmline(SBSR);
 		bsr->arg1.labelval = ir->call.func;
 		bsr->next = ssm_move_data(reg, RR);
+		if(ret != NULL) {
+			assert(ssm_iterate_last(prev) == ssm_iterate_last(ret));
+			ssm_iterate_last(prev)->next = bsr;
+			struct ssmline *ajs = alloc_ssmline(SAJS);
+			ajs->arg1.intval = -nargs;
+			ssm_iterate_last(bsr)->next = ajs;
+			return ret;
+		}
 		return bsr;
 	case ESEQ:
 		return nop;
@@ -263,6 +285,7 @@ ir_to_ssm(struct irunit *ir) {
 		} else if(ir->seq.left->type == FUNC) {
 			// reserve memory for locals: LINK, UNLINK
 			// look forward how many locals will be used in this function alone
+			// XXX LINK 0 wegoptimizen?
 			res = alloc_ssmline(SLINK);
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
 			res->arg1.intval = ir->seq.left->func.vars;
@@ -271,6 +294,7 @@ ir_to_ssm(struct irunit *ir) {
 			if(ssm_iterate_last(res)->instr != SRET) {
 				ssm_iterate_last(res)->next = ssm_return(NULL);
 			}
+			asprintf(&res->comment, "Function with %d argument(s)", ir->seq.left->func.args);
 			return res;
 		} else {
 			struct ssmline *first = ir_to_ssm(ir->seq.left);
@@ -315,6 +339,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		case STRAP:  printf("TRAP %d", ssm->arg1.intval); break;
 		case SLDL:  printf("SLDL %d", ssm->arg1.intval); break;
 		case SSTL:  printf("SSTL %d", ssm->arg1.intval); break;
+		case SAJS:  printf("SAJS %d", ssm->arg1.intval); break;
 		// label parameter
 		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
 		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;

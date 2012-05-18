@@ -329,10 +329,11 @@ irstm *mkirret(irexp *exp) {
 	ret->ret = exp;
 	return ret;
 }
-irstm *mkirfunc(irfunc f, int nvars) {
+irstm *mkirfunc(irfunc f, int nargs, int nvars) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = FUNC;
 	ret->func.funcid = f;
+	ret->func.args = nargs;
 	ret->func.vars = nvars;
 	return ret;
 }
