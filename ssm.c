@@ -24,6 +24,8 @@ static ssmlabel ssmlabelptr = 0;
 static ssmlabel heaplabel = 0;
 static int args_for_current_function = -1;
 
+extern irfunc builtin_head;
+
 static struct ssmline *
 alloc_ssmline(ssminstr instr) {
 	struct ssmline *ssm = malloc(sizeof(struct ssmline));
@@ -169,6 +171,16 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 }
 
 static struct ssmline *
+chain_ssmlines(struct ssmline **lines) {
+	int i = 0;
+	while(lines[i] != NULL) {
+		lines[i]->next = lines[i+1];
+		i++;
+	}
+	return lines[0];
+}
+
+static struct ssmline *
 ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	// if reg == NONE, throw away result
 	// if ret == STACK, push it on the stack
@@ -279,8 +291,43 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			return ret;
 		}
 		return bsr;
+	case LISTEL: {
+		/*
+			<fetch exp>
+			<fetch next>
+			LDR R7
+			STMA 0 2
+			LDR R7
+			LDC 2
+			ADD
+			STR R7
+		*/
+		struct ssmline *ret[8];
+		ret[0] = alloc_ssmline(SLDR);
+		ret[0]->arg1.regval = R7;
+		ret[1] = alloc_ssmline(SSTMA);
+		ret[1]->arg1.intval = 0;
+		ret[1]->arg2.intval = 2;
+		ret[2] = alloc_ssmline(SLDR);
+		ret[2]->arg1.regval = R7;
+		ret[3] = alloc_ssmline(SLDR);
+		ret[3]->arg1.regval = R7;
+		ret[4] = alloc_ssmline(SLDC);
+		ret[4]->arg1.intval = 2;
+		ret[5] = alloc_ssmline(SADD);
+		ret[6] = alloc_ssmline(SSTR);
+		ret[6]->arg1.regval = R7;
+		ret[7] = NULL;
+		struct ssmline *exp = ir_exp_to_ssm(ir->listel.exp, STACK);
+		struct ssmline *next = ir_exp_to_ssm(ir->listel.next, STACK);
+		ssm_iterate_last(exp)->next = next;
+		ssm_iterate_last(next)->next = chain_ssmlines(ret);
+		ssm_iterate_last(next)->next = ssm_move_data(reg, STACK);
+		return exp;
+	}
 	case ESEQ:
 		assert(!"implemented");
+		break;
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");
@@ -398,6 +445,10 @@ ir_to_ssm(struct irunit *ir) {
 
 void
 write_ssm(struct ssmline *ssm, FILE *fd) {
+	printf("         LDC %d ; Initialize the HP\n", 100); // XXX initalizen op het aantal globale variabelen + 2
+	printf("         LDC lbl%04d\n", heaplabel); // XXX initalizen op het aantal globale variabelen + 2
+	puts("         ADD");
+	puts("         STR R7");
 	while(ssm != NULL) {
 		if(ssm->label == 0) {
 			printf("         ");
@@ -426,6 +477,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_VOID(GT);
 		INSTR_VOID(LE);
 		INSTR_VOID(GE);
+
 		// integer parameter
 #define INSTR_INT(instr)	case S ## instr: printf(#instr " %d", ssm->arg1.intval); break
 		INSTR_INT(LDC);
@@ -449,6 +501,10 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_REG(STR);
 		INSTR_REG(LDR);
 
+		// integer parameter, integer parameter
+#define INSTR_INT_INT(instr)	case S ## instr: printf(#instr " %d %d", ssm->arg1.intval, ssm->arg2.intval); break
+		INSTR_INT_INT(STMA);
+
 		// register parameter, register parameter
 #define INSTR_REG_REG(instr)	case S ## instr: printf(#instr " %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break
 		INSTR_REG_REG(SWPRR);
@@ -465,6 +521,8 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		printf("\n");
 		ssm = ssm->next;
 	}
+	printf("lbl%04d: NOP ; Builtin function head()\n", get_ssmlabel_from_irlabel(builtin_head));
+	// XXX implementeren
 	printf("lbl%04d: NOP ; Begin of the heap\n", 0);
 }
 

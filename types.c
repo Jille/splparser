@@ -45,9 +45,7 @@ struct tc_func {
 	char *name;
 	struct func_arg *args;
 	struct vardecl *decls;
-	synt_tree *stmts;
 	struct vardecl **decls_last;
-	synt_tree **stmts_last;
 	struct type *pm_types;
 	irfunc func;
 	int nargs;
@@ -75,6 +73,8 @@ struct tc_globals {
 typedef struct irunit *(*descend_ft)(DESCEND_ARGS);
 
 descend_ft *rule_handlers;
+
+irfunc builtin_head;
 
 void
 show_type(int indent, struct type *t)
@@ -487,7 +487,6 @@ DESCEND_FUNC(fundecl) {
 	irstm *body = NULL;
 
 	fdata->decls_last = &fdata->decls;
-	fdata->stmts_last = &fdata->stmts;
 
 	tc_descend(tg, chld, &fdata->returntype);
 	chld = chld->next;
@@ -749,7 +748,7 @@ DESCEND_FUNC(expression) {
 			assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ']');
 			res->type = '[';
 			res->list_type = NULL;
-			return mkirconst(0); // XXX
+			return mkirconst(0);
 		case '(':
 			if(t->fst_child->next->next->next == NULL) { // Exp within braces
 				assert(t->fst_child->next->next->token->type == ')');
@@ -832,7 +831,7 @@ DESCEND_FUNC(expression) {
 		res->type = '[';
 		res->list_type = malloc(sizeof(struct type));
 		memcpy(res->list_type, &fst, sizeof(struct type));
-		return mkirconst(0); // XXX
+		return mkirlistel(lhs, rhs);
 	default:
 		fprintf(stderr, "Unexpected operator in Expression type checking: %s\n", token_to_string(t->fst_child->next->token->type));
 		abort();
@@ -857,6 +856,35 @@ DESCEND_FUNC(return) {
 	}
 	unify_types(tg, tc->returntype, &newtype, NULL);
 	return mkirret(ret);
+}
+
+void
+init_builtin_functions(struct tc_globals *tg) {
+	struct tc_func *head = calloc(1, sizeof(struct tc_func));
+	head->returntype = malloc(sizeof(struct type));
+	head->returntype->type = T_WORD;
+	head->returntype->pm_name = "t";
+	head->returntype->accept_empty_list = 0; // ?
+	head->name = "head";
+	head->args = malloc(sizeof(struct func_arg));
+	head->args->name = "list";
+	head->args->type = malloc(sizeof(struct type));
+	head->args->type->type = '[';
+	head->args->type->list_type = malloc(sizeof(struct type));
+	head->args->type->list_type->type = T_WORD;
+	head->args->type->list_type->pm_name = "t";
+	head->args->type->list_type->accept_empty_list = 0; // ?
+	head->args->farg = 0;
+	head->args->next = NULL;
+	head->decls = NULL;
+	head->func = getfunc();
+	head->nargs = 1;
+	head->nlocals = 0;
+	head->next = NULL;
+
+	builtin_head = head->func;
+	*tg->funcs_last = head;
+	tg->funcs_last = &head->next;
 }
 
 struct irunit *
@@ -889,5 +917,8 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Decl, simple_seq);
 	SET_RULE_HANDLER(VarDecl+, simple_seq);
 	SET_RULE_HANDLER(Functions, init);
+
+	init_builtin_functions(&tg);
+
 	return tc_descend(&tg, t, NULL);
 }

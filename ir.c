@@ -102,6 +102,19 @@ show_ir_tree(struct irunit *ir, int indent) {
 	case ESEQ:
 		printf("ESEQ(todo)");
 		break;
+	case LISTEL:
+		puts("LISTEL(");
+		indent++;
+		print_indent(indent);
+		show_ir_tree(ir->listel.exp, indent);
+		printf(",\n");
+		print_indent(indent);
+		show_ir_tree(ir->listel.next, indent);
+		printf("\n");
+		indent--;
+		print_indent(indent);
+		printf(")");
+		break;
 	case MOVE:
 		puts("MOVE(");
 		indent++;
@@ -282,7 +295,6 @@ irexp *mkircall(irfunc func, struct irexplist *args) {
 	ret->call.args = args;
 	return ret;
 }
-
 irexp *mkireseq(irstm *stm, irexp *exp) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = ESEQ;
@@ -290,6 +302,14 @@ irexp *mkireseq(irstm *stm, irexp *exp) {
 	ret->eseq.exp = exp;
 	return ret;
 }
+irexp *mkirlistel(irexp *exp, irexp *next) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = LISTEL;
+	ret->listel.exp = exp;
+	ret->listel.next = next;
+	return ret;
+}
+
 irstm *mkirexp(irexp *exp) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = EXP;
