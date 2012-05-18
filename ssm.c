@@ -21,6 +21,7 @@ struct ssmfuncmapping {
 static struct ssmlabelmapping *ssmlabels = NULL;
 static struct ssmfuncmapping *ssmfuncs = NULL;
 static ssmlabel ssmlabelptr = 0;
+static int args_for_current_function = -1;
 
 static struct ssmline *
 alloc_ssmline(ssminstr instr) {
@@ -143,7 +144,9 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 		case R6:
 		case R7:
 			if(dst == STACK) {
-				assert(!"yet implemented");
+				struct ssmline *ldr = alloc_ssmline(SLDR);
+				ldr->arg1.regval = src;
+				return ldr;
 			} else {
 				struct ssmline *swprr = alloc_ssmline(SSWPRR); // XXX LDRR is een copy ipv swap, dus beter?
 				swprr->arg1.regval = dst;
@@ -166,6 +169,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	switch(ir->type) {
 	case CONST:
 		if(reg == NONE) {
+			nop->comment = "exp_to_ssm: put CONST in NONE";
 			return nop;
 		}
 		// LDC: pushes the inline constant on the stack
@@ -173,17 +177,61 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		ldc->arg1.intval = ir->value;
 		ldc->next = ssm_move_data(reg, STACK);
 		return ldc;
-	case BINOP:
-		return nop;
+	case BINOP: {
+		struct ssmline *left = ir_exp_to_ssm(ir->binop.left, STACK);
+		struct ssmline *right = ir_exp_to_ssm(ir->binop.right, STACK);
+		struct ssmline *op;
+		switch(ir->binop.op) {
+#define CONVERT_BINOP_TO_SSMLINE(irop) case irop: op = alloc_ssmline(S ## irop); break
+			case PLUS:
+				op = alloc_ssmline(SADD);
+				break;
+			case MINUS:
+				op = alloc_ssmline(SSUB);
+				break;
+			case EQ:
+				op = alloc_ssmline(S_EQ);
+				break;
+			CONVERT_BINOP_TO_SSMLINE(MUL);
+			CONVERT_BINOP_TO_SSMLINE(DIV);
+			CONVERT_BINOP_TO_SSMLINE(MOD);
+			CONVERT_BINOP_TO_SSMLINE(AND);
+			CONVERT_BINOP_TO_SSMLINE(OR);
+			CONVERT_BINOP_TO_SSMLINE(XOR);
+			CONVERT_BINOP_TO_SSMLINE(NE);
+			CONVERT_BINOP_TO_SSMLINE(LT);
+			CONVERT_BINOP_TO_SSMLINE(GT);
+			CONVERT_BINOP_TO_SSMLINE(LE);
+			CONVERT_BINOP_TO_SSMLINE(GE);
+			case LSHIFT:
+			case RSHIFT:
+			case ARSHIFT:
+				assert(!"yet implemented");
+			default:
+				assert(!"reached");
+		}
+		ssm_iterate_last(left)->next = right;
+		ssm_iterate_last(right)->next = op;
+		ssm_iterate_last(op)->next = ssm_move_data(reg, STACK);
+		return left;
+	}
 	case LOCAL: {
 		struct ssmline *ret = alloc_ssmline(SLDL);
-		ret->arg1.labelval = -ir->local;
+		ret->arg1.intval = -ir->local;
 		ret->next = ssm_move_data(reg, STACK);
 		return ret;
 	}
 	case GLOBAL:
-	case FARG:
+		nop->comment = "exp_to_ssm: fetch GLOBAL";
 		return nop;
+	case FARG: {
+		struct ssmline *ret = alloc_ssmline(SLDL);
+		assert(args_for_current_function > 0);
+		ret->arg1.intval = args_for_current_function - ir->farg - 2; // XXX klopt dit?
+		ret->next = ssm_move_data(reg, STACK);
+		ret->comment = "fetch FARG";
+		return ret;
+	}
 	case CALL: ;
 		// TODO: don't scratch the RR register (push RR, CALL, SWAPR?)
 		// TODO: what if the called function is void / returns nothing?
@@ -214,6 +262,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		}
 		return bsr;
 	case ESEQ:
+		nop->comment = "exp_to_ssm: ESEQ";
 		return nop;
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
@@ -254,9 +303,11 @@ ir_to_ssm(struct irunit *ir) {
 				ssm_iterate_last(exp)->next = ret;
 				break;
 			case GLOBAL:
+				nop->comment = "Move to GLOBAL";
 				return nop;
 				break;
 			case FARG:
+				nop->comment = "Move to FARG";
 				return nop;
 				break;
 			default:
@@ -288,12 +339,13 @@ ir_to_ssm(struct irunit *ir) {
 			res = alloc_ssmline(SLINK);
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
 			res->arg1.intval = ir->seq.left->func.vars;
+			asprintf(&res->comment, "Function with %d argument(s)", ir->seq.left->func.args);
+			args_for_current_function = ir->seq.left->func.args;
 			res->next = ir_to_ssm(ir->seq.right);
 			// Add RET to the end of the function if it's not there yet
 			if(ssm_iterate_last(res)->instr != SRET) {
 				ssm_iterate_last(res)->next = ssm_return(NULL);
 			}
-			asprintf(&res->comment, "Function with %d argument(s)", ir->seq.left->func.args);
 			return res;
 		} else {
 			struct ssmline *first = ir_to_ssm(ir->seq.left);
@@ -304,11 +356,13 @@ ir_to_ssm(struct irunit *ir) {
 	case RET:
 		return ssm_return(ir->ret);
 	case EXP: // evaluate expression, throw away result
-		return ir_exp_to_ssm(ir->exp, 0);
+		return ir_exp_to_ssm(ir->exp, NONE);
 	case TRAP:
+		exp = ir_exp_to_ssm(ir->trap.arg, STACK);
 		res = alloc_ssmline(STRAP);
-		res->arg1.intval = ir->syscall;
-		return res;
+		res->arg1.intval = ir->trap.syscall;
+		ssm_iterate_last(exp)->next = res;
+		return exp;
 	case HALT:
 		return alloc_ssmline(SHALT);
 	case LABEL:
@@ -333,24 +387,49 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 
 		switch(ssm->instr) {
 		// no parameters
-		case SNOP:  printf("NOP"); break;
-		case SHALT: printf("HALT"); break;
-		case SRET:  printf("RET"); break;
-		case SUNLINK:  printf("UNLINK"); break;
+#define INSTR_VOID(instr)	case S ## instr: printf(#instr); break
+		INSTR_VOID(NOP);
+		INSTR_VOID(HALT);
+		INSTR_VOID(RET);
+		INSTR_VOID(UNLINK);
+		INSTR_VOID(ADD);
+		INSTR_VOID(SUB);
+		INSTR_VOID(MUL);
+		INSTR_VOID(DIV);
+		INSTR_VOID(MOD);
+		INSTR_VOID(AND);
+		INSTR_VOID(OR);
+		INSTR_VOID(XOR);
+		case S_EQ:  printf("EQ"); break;
+		INSTR_VOID(NE);
+		INSTR_VOID(LT);
+		INSTR_VOID(GT);
+		INSTR_VOID(LE);
+		INSTR_VOID(GE);
 		// integer parameter
-		case SLDC:  printf("LDC %d", ssm->arg1.intval); break;
-		case SLINK:  printf("LINK %d", ssm->arg1.intval); break;
-		case STRAP:  printf("TRAP %d", ssm->arg1.intval); break;
-		case SLDL:  printf("SLDL %d", ssm->arg1.intval); break;
-		case SSTL:  printf("SSTL %d", ssm->arg1.intval); break;
-		case SAJS:  printf("SAJS %d", ssm->arg1.intval); break;
+#define INSTR_INT(instr)	case S ## instr: printf(#instr " %d", ssm->arg1.intval); break
+		INSTR_INT(LDC);
+		INSTR_INT(LINK);
+		INSTR_INT(TRAP);
+		INSTR_INT(LDL);
+		INSTR_INT(STL);
+		INSTR_INT(AJS);
+
 		// label parameter
-		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
-		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;
-		case SBRF:  printf("BRF lbl%04d", ssm->arg1.labelval); break;
+#define INSTR_LABEL(instr)	case S ## instr: printf(#instr " lbl%04d", ssm->arg1.labelval); break
+		INSTR_LABEL(BRA);
+		INSTR_LABEL(BSR);
+		INSTR_LABEL(BRF);
+
 		// register parameter
-		case SSTR:  printf("STR %s", ssm_register_to_string(ssm->arg1.regval)); break;
-		case SSWPRR:printf("SWPRR %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break;
+#define INSTR_REG(instr)	case S ## instr: printf(#instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
+		INSTR_REG(STR);
+		INSTR_REG(LDR);
+
+		// register parameter, register parameter
+#define INSTR_REG_REG(instr)	case S ## instr: printf(#instr " %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break
+		INSTR_REG_REG(SWPRR);
+
 		default:
 			printf("Unknown instruction %d\n", ssm->instr);
 			assert(0);

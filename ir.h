@@ -61,7 +61,10 @@ struct irunit {
 				int vars;
 			} func;
 			irexp *ret;
-			int syscall;
+			struct {
+				int syscall;
+				irexp *arg;
+			} trap;
 		};
 	};
 };
@@ -92,7 +95,7 @@ irstm *mkircjump(irexp *exp, irlabel f);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nargs, int nvars);
-irstm *mkirtrap(int syscall);
+irstm *mkirtrap(int syscall, irexp *arg);
 irstm *mkirhalt(void);
 
 #endif

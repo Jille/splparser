@@ -325,7 +325,7 @@ DESCEND_FUNC(init) {
 	struct irunit *program = tc_descend(tg, t->fst_child, arg);
 	struct tc_func *f = lookup_function(tg, "main");
 	// XXX check whether main's (return)type is correct
-	return irconcat(mkirexp(mkircall(f->func, NULL)), mkirtrap(0), mkirhalt(), program, NULL);
+	return irconcat(mkirtrap(0, mkircall(f->func, NULL)), mkirhalt(), program, NULL);
 }
 
 DESCEND_FUNC(rettype) {
