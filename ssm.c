@@ -172,11 +172,11 @@ static struct ssmline *
 ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	// if reg == NONE, throw away result
 	// if ret == STACK, push it on the stack
-	struct ssmline *nop = alloc_ssmline(SNOP);
 
 	switch(ir->type) {
 	case CONST:
 		if(reg == NONE) {
+			struct ssmline *nop = alloc_ssmline(SNOP);
 			nop->comment = "exp_to_ssm: put CONST in NONE";
 			return nop;
 		}
@@ -280,8 +280,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		}
 		return bsr;
 	case ESEQ:
-		nop->comment = "ESEQ";
-		return nop;
+		assert(!"implemented");
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");
@@ -305,8 +304,6 @@ ir_to_ssm(struct irunit *ir) {
 	struct ssmline *res;
 	struct ssmline *exp;
 	assert(ir != NULL);
-
-	struct ssmline *nop = alloc_ssmline(SNOP);
 
 	switch(ir->type) {
 	case MOVE:; // Evaluate src and store the result in dst (LOCAL, GLOBAL or FARG)
@@ -390,8 +387,9 @@ ir_to_ssm(struct irunit *ir) {
 		return exp;
 	case HALT:
 		return alloc_ssmline(SHALT);
-	case LABEL:
+	case LABEL: ;
 		// XXX [2012-05-18 jille] Sjors, dit is lelijk. Je moet die SEQ echt niet zo uitwerken.
+		struct ssmline *nop = alloc_ssmline(SNOP);
 		nop->label = get_ssmlabel_from_irlabel(ir->label);
 		nop->comment = "Gewoon een label";
 		return nop;
