@@ -21,6 +21,15 @@ static struct ssmlabelmapping *ssmlabels = NULL;
 static struct ssmfuncmapping *ssmfuncs = NULL;
 static ssmlabel ssmlabelptr = 0;
 
+static struct ssmline *
+alloc_ssmline(ssminstr instr) {
+	struct ssmline *ssm = malloc(sizeof(struct ssmline));
+	ssm->label = 0;
+	ssm->instr = instr;
+	ssm->next = NULL;
+	return ssm;
+}
+
 static ssmlabel
 get_ssmlabel_from_irlabel(irlabel ir) {
 	if(ssmlabels != NULL && ssmlabels->ir == ir)
@@ -113,12 +122,9 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 	}
 	switch(src) {
 		case STACK: ;
-			struct ssmline *str = malloc(sizeof(struct ssmline));
-			str->label = 0;
 			// [2012-08-14 jille] Is STR hier de goede instructie voor?
-			str->instr = SSTR;
+			struct ssmline *str = alloc_ssmline(SSTR);
 			str->arg1.regval = dst;
-			str->next = NULL;
 			return str;
 		case PC:
 		case SP:
@@ -131,12 +137,9 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 			if(dst == STACK) {
 				assert(!"yet implemented");
 			} else {
-				struct ssmline *swprr = malloc(sizeof(struct ssmline));
-				swprr->label = 0;
-				swprr->instr = SSWPRR; // XXX LDRR is een copy ipv swap, dus beter?
+				struct ssmline *swprr = alloc_ssmline(SSWPRR); // XXX LDRR is een copy ipv swap, dus beter?
 				swprr->arg1.regval = dst;
 				swprr->arg2.regval = src;
-				swprr->next = NULL;
 				return swprr;
 			}
 			break;
@@ -150,10 +153,7 @@ static struct ssmline *
 ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	// if reg == NONE, throw away result
 	// if ret == STACK, push it on the stack
-	struct ssmline *nop = malloc(sizeof(struct ssmline));
-	nop->label = 0;
-	nop->instr = SNOP;
-	nop->next = 0;
+	struct ssmline *nop = alloc_ssmline(SNOP);
 
 	switch(ir->type) {
 	case CONST:
@@ -161,9 +161,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			return nop;
 		}
 		// LDC: pushes the inline constant on the stack
-		struct ssmline *ldc = malloc(sizeof(struct ssmline));
-		ldc->label = 0;
-		ldc->instr = SLDC;
+		struct ssmline *ldc = alloc_ssmline(SLDC);
 		ldc->arg1.intval = ir->value;
 		ldc->next = ssm_move_data(reg, STACK);
 		return ldc;
@@ -172,9 +170,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	case BINOP:
 		return nop;
 	case LOCAL: ;
-		struct ssmline *ret = malloc(sizeof(struct ssmline));
-		ret->label = 0;
-		ret->instr = SLDL;
+		struct ssmline *ret = alloc_ssmline(SLDL);
 		ret->arg1.labelval = -ir->local;
 		ret->next = ssm_move_data(reg, STACK);
 		return ret;
@@ -185,9 +181,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		// TODO: don't scratch the RR register (push RR, CALL, SWAPR?)
 		// TODO: parameters
 		// TODO: what if the called function is void / returns nothing?
-		struct ssmline *bsr = malloc(sizeof(struct ssmline));
-		bsr->label = 0;
-		bsr->instr = SBSR;
+		struct ssmline *bsr = alloc_ssmline(SBSR);
 		bsr->arg1.labelval = ir->call.func;
 		bsr->next = ssm_move_data(reg, RR);
 		return bsr;
@@ -201,13 +195,8 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 
 static struct ssmline *
 ssm_return(irexp *retval) {
-	struct ssmline *res = malloc(sizeof(struct ssmline));
-	res->label = 0;
-	res->instr = SUNLINK;
-	res->next = malloc(sizeof(struct ssmline));
-	res->next->label = 0;
-	res->next->instr = SRET;
-	res->next->next = NULL;
+	struct ssmline *res = alloc_ssmline(SUNLINK);
+	res->next = alloc_ssmline(SRET);
 	if(retval != NULL) {
 		struct ssmline *exp = ir_exp_to_ssm(retval, RR);
 		ssm_iterate_last(exp)->next = res;
@@ -222,10 +211,7 @@ ir_to_ssm(struct irunit *ir) {
 	struct ssmline *exp;
 	assert(ir != NULL);
 
-	struct ssmline *nop = malloc(sizeof(struct ssmline));
-	nop->label = 0;
-	nop->instr = SNOP;
-	nop->next = NULL;
+	struct ssmline *nop = alloc_ssmline(SNOP);
 
 	switch(ir->type) {
 	case MOVE:; // Evaluate src and store the result in dst (LOCAL, GLOBAL or FARG)
@@ -235,11 +221,8 @@ ir_to_ssm(struct irunit *ir) {
 		switch(ir->move.dst->type) {
 			case LOCAL:
 				// Store the result in a local variable
-				ret = malloc(sizeof(struct ssmline));
-				ret->label = 0;
-				ret->instr = SSTL;
+				ret = alloc_ssmline(SSTL);
 				ret->arg1.labelval = -ir->move.dst->local;
-				ret->next = NULL;
 				ssm_iterate_last(exp)->next = ret;
 				break;
 			case GLOBAL:
@@ -256,11 +239,8 @@ ir_to_ssm(struct irunit *ir) {
 		//show_ir_tree(ir->jump.exp, indent);
 		return nop;
 	case CJUMP: // jump to label as result of relop
-		res = malloc(sizeof(struct ssmline));
-		res->label = 0;
-		res->instr = SBRF;
+		res = alloc_ssmline(SBRF);
 		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->cjump.iffalse);
-		res->next = NULL;
 		exp = ir_exp_to_ssm(ir->cjump.exp, STACK);
 		ssm_iterate_last(exp)->next = res;
 		return exp;
@@ -274,9 +254,8 @@ ir_to_ssm(struct irunit *ir) {
 		} else if(ir->seq.left->type == FUNC) {
 			// reserve memory for locals: LINK, UNLINK
 			// look forward how many locals will be used in this function alone
-			res = malloc(sizeof(struct ssmline));
+			res = alloc_ssmline(SLINK);
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
-			res->instr = SLINK;
 			res->arg1.intval = ir->seq.left->func.vars;
 			res->next = ir_to_ssm(ir->seq.right);
 			// Add RET to the end of the function if it's not there yet
@@ -295,18 +274,11 @@ ir_to_ssm(struct irunit *ir) {
 	case EXP: // evaluate expression, throw away result
 		return ir_exp_to_ssm(ir->exp, 0);
 	case TRAP:
-		res = malloc(sizeof(struct ssmline));
-		res->label = 0;
-		res->instr = STRAP;
+		res = alloc_ssmline(STRAP);
 		res->arg1.intval = ir->syscall;
-		res->next = NULL;
 		return res;
 	case HALT:
-		res = malloc(sizeof(struct ssmline));
-		res->label = 0;
-		res->instr = SHALT;
-		res->next = NULL;
-		return res;
+		return alloc_ssmline(SHALT);
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");
