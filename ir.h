@@ -1,7 +1,7 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, NAME, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT } irtype;
+typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
 struct irunit;
@@ -45,10 +45,7 @@ struct irunit {
 				irexp *src;
 			} move;
 			irexp *exp;
-			struct {
-				irexp *exp;
-				// LabelList targets ..?
-			} jump;
+			irlabel jump;
 			struct {
 				irexp *exp;
 				irlabel iffalse;
@@ -86,12 +83,11 @@ irexp *mkirlocal(irlocal num);
 irexp *mkirglobal(irglobal num);
 irexp *mkirfarg(irfarg num);
 irexp *mkirconst(int num);
-irexp *mkirname(irlabel label);
 irexp *mkirbinop(irop binop, irexp *left, irexp *right);
 irexp *mkircall(irfunc func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
 irstm *mkirexp(irexp *exp);
-irstm *mkirjump(irexp *addr);
+irstm *mkirjump(irlabel label);
 irstm *mkircjump(irexp *exp, irlabel f);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *exp);

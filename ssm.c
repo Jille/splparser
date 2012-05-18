@@ -173,8 +173,6 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		ldc->arg1.intval = ir->value;
 		ldc->next = ssm_move_data(reg, STACK);
 		return ldc;
-	case NAME:
-		return nop;
 	case BINOP:
 		return nop;
 	case LOCAL: {
@@ -267,8 +265,9 @@ ir_to_ssm(struct irunit *ir) {
 		exp->comment = "Move";
 		return exp;
 	case JUMP: // jump to address as result of expression
-		//show_ir_tree(ir->jump.exp, indent);
-		return nop;
+		res = alloc_ssmline(SBRA);
+		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->jump);
+		return res;
 	case CJUMP: // jump to label as result of relop
 		res = alloc_ssmline(SBRF);
 		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->cjump.iffalse);
@@ -312,6 +311,11 @@ ir_to_ssm(struct irunit *ir) {
 		return res;
 	case HALT:
 		return alloc_ssmline(SHALT);
+	case LABEL:
+		// XXX [2012-05-18 jille] Sjors, dit is lelijk. Je moet die SEQ echt niet zo uitwerken.
+		nop->label = get_ssmlabel_from_irlabel(ir->label);
+		nop->comment = "Gewoon een label";
+		return nop;
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");

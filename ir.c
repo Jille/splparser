@@ -48,11 +48,6 @@ show_ir_tree(struct irunit *ir, int indent) {
 	case CONST:
 		printf("CONST(%d)", ir->value);
 		break;
-	case NAME:
-		lbl = irlabel_to_string(ir->name);
-		printf("NAME(%s)", lbl);
-		free(lbl);
-		break;
 	case LOCAL:
 		printf("LOCAL(%d)", ir->local);
 		break;
@@ -126,9 +121,9 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf(")");
 		break;
 	case JUMP:
-		printf("JUMP(");
-		show_ir_tree(ir->jump.exp, indent);
-		printf(")");
+		lbl = irlabel_to_string(ir->name);
+		printf("JUMP(%s)", lbl);
+		free(lbl);
 		break;
 	case CJUMP:
 		printf("CJUMP(\n");
@@ -264,13 +259,6 @@ mkirconst(int num) {
 	return ret;
 }
 
-irexp *mkirname(irlabel label) {
-	irexp *ret = malloc(sizeof(struct irunit));
-	ret->type = NAME;
-	ret->name = label;
-	return ret;
-}
-
 irexp *mkirbinop(irop binop, irexp *left, irexp *right) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = BINOP;
@@ -301,10 +289,10 @@ irstm *mkirexp(irexp *exp) {
 	ret->exp = exp;
 	return ret;
 }
-irstm *mkirjump(irexp *addr /*, labellist targets */) {
+irstm *mkirjump(irlabel label) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = JUMP;
-	ret->exp = addr;
+	ret->jump = label;
 	return ret;
 }
 irstm *mkircjump(irexp *exp, irlabel f) {
