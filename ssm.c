@@ -171,7 +171,13 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		return nop;
 	case BINOP:
 		return nop;
-	case LOCAL:
+	case LOCAL: ;
+		struct ssmline *ret = malloc(sizeof(struct ssmline));
+		ret->label = 0;
+		ret->instr = SLDL;
+		ret->arg1.labelval = -ir->local;
+		ret->next = ssm_move_data(reg, STACK);
+		return ret;
 	case GLOBAL:
 	case FARG:
 		return nop;
@@ -213,6 +219,7 @@ ssm_return(irexp *retval) {
 struct ssmline *
 ir_to_ssm(struct irunit *ir) {
 	struct ssmline *res;
+	struct ssmline *exp;
 	assert(ir != NULL);
 
 	struct ssmline *nop = malloc(sizeof(struct ssmline));
@@ -221,23 +228,30 @@ ir_to_ssm(struct irunit *ir) {
 	nop->next = NULL;
 
 	switch(ir->type) {
-	case MOVE: // Evaluate src and store the result in dst (LOCAL, GLOBAL or FARG)
-		assert(ir->move.dst->type == LOCAL || ir->move.dst->type == GLOBAL || ir->move.dst->type == FARG);
+	case MOVE:; // Evaluate src and store the result in dst (LOCAL, GLOBAL or FARG)
+		struct ssmline *ret;
+		exp = ir_exp_to_ssm(ir->move.src, STACK);
 
-		//struct ssmline *ir
-
-		if(ir->move.dst->type == LOCAL) {
-			// Store the result in a temporary variable
-			// TODO
-			// LDL -<localevar n>
-		} else {
-			// Store the result in a memory location
-			// TODO
+		switch(ir->move.dst->type) {
+			case LOCAL:
+				// Store the result in a local variable
+				ret = malloc(sizeof(struct ssmline));
+				ret->label = 0;
+				ret->instr = SSTL;
+				ret->arg1.labelval = -ir->move.dst->local;
+				ret->next = NULL;
+				ssm_iterate_last(exp)->next = ret;
+				break;
+			case GLOBAL:
+				return nop;
+				break;
+			case FARG:
+				return nop;
+				break;
+			default:
+				assert(!"reached");
 		}
-		return nop;
-		/*show_ir_tree(ir->move.dst, indent);
-		show_ir_tree(ir->move.src, indent);
-		break;*/
+		return exp;
 	case JUMP: // jump to address as result of expression
 		//show_ir_tree(ir->jump.exp, indent);
 		return nop;
@@ -247,7 +261,7 @@ ir_to_ssm(struct irunit *ir) {
 		res->instr = SBRF;
 		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->cjump.iffalse);
 		res->next = NULL;
-		struct ssmline *exp = ir_exp_to_ssm(ir->cjump.exp, STACK);
+		exp = ir_exp_to_ssm(ir->cjump.exp, STACK);
 		ssm_iterate_last(exp)->next = res;
 		return exp;
 	case SEQ: // Statement "left" followed by "right"
@@ -318,6 +332,8 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		case SLDC:  printf("LDC %d", ssm->arg1.intval); break;
 		case SLINK:  printf("LINK %d", ssm->arg1.intval); break;
 		case STRAP:  printf("TRAP %d", ssm->arg1.intval); break;
+		case SLDL:  printf("SLDL %d", ssm->arg1.intval); break;
+		case SSTL:  printf("SSTL %d", ssm->arg1.intval); break;
 		// label parameter
 		case SBRA:  printf("BRA lbl%04d", ssm->arg1.labelval); break;
 		case SBSR:  printf("BSR lbl%04d", ssm->arg1.labelval); break;
