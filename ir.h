@@ -1,7 +1,7 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, NAME, TEMP, BINOP, MEM, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT } irtype;
+typedef enum { CONST, NAME, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
 struct irunit;
@@ -9,7 +9,9 @@ typedef struct irunit irexp;
 typedef struct irunit irstm;
 typedef int irlabel;
 typedef int irfunc;
-typedef int irtemp;
+typedef int irlocal;
+typedef int irglobal;
+typedef int irfarg;
 
 struct irunit {
 	irtype type;
@@ -18,7 +20,9 @@ struct irunit {
 		union {
 			int value;
 			irlabel name;
-			irtemp temp;
+			irlocal local;
+			irfarg farg;
+			irglobal global;
 			struct {
 				irop op;
 				irexp *left;
@@ -73,16 +77,16 @@ struct irexplist {
 void show_ir_tree(struct irunit *ir, int indent);
 irlabel getlabel(void);
 irfunc getfunc(void);
-irtemp gettemp(void);
 irstm *mkirseq(irstm *left, irstm *right);
 irstm *mkirseq_opt(irstm *left, irstm *right);
 irstm *irconcat(irstm *stm, ...);
 irstm *mkirmove(irexp *dst, irexp *src);
-irexp *mkirtemp(irtemp num);
+irexp *mkirlocal(irlocal num);
+irexp *mkirglobal(irglobal num);
+irexp *mkirfarg(irfarg num);
 irexp *mkirconst(int num);
 irexp *mkirname(irlabel label);
 irexp *mkirbinop(irop binop, irexp *left, irexp *right);
-irexp *mkirmem(irexp *a);
 irexp *mkircall(irfunc func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
 irstm *mkirexp(irexp *exp);

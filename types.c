@@ -13,13 +13,16 @@
 struct vardecl {
 	char *name;
 	struct type *type;
-	irtemp temp;
+	union {
+		irlocal local;
+		irglobal global;
+	};
 	struct vardecl *next;
 };
 struct func_arg {
 	char *name;
 	struct type *type;
-	irtemp temp;
+	irfarg farg;
 	struct func_arg *next;
 };
 struct pm_bind {
@@ -30,7 +33,12 @@ struct pm_bind {
 struct variable {
 	char *name;
 	struct type *type;
-	irtemp temp;
+	irtype irtype;
+	union {
+		irlocal local;
+		irglobal global;
+		irfarg farg;
+	};
 };
 struct tc_func {
 	struct type *returntype;
@@ -42,6 +50,8 @@ struct tc_func {
 	synt_tree **stmts_last;
 	struct type *pm_types;
 	irfunc func;
+	int nargs;
+	int nlocals;
 	struct tc_func *next;
 };
 struct tc_globals {
@@ -52,6 +62,7 @@ struct tc_globals {
 	struct tc_func **funcs_last;
 	struct vardecl *decls;
 	struct vardecl **decls_last;
+	int nglobals;
 
 	// Temporary hack
 	struct tc_func *curfunc;
@@ -165,7 +176,8 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 		if(strcmp(vd->name, name) == 0) {
 			var->name = vd->name;
 			var->type = vd->type;
-			var->temp = vd->temp;
+			var->irtype = LOCAL;
+			var->local = vd->local;
 			return var;
 		}
 		vd = vd->next;
@@ -176,7 +188,8 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 		if(strcmp(fa->name, name) == 0) {
 			var->name = fa->name;
 			var->type = fa->type;
-			var->temp = fa->temp;
+			var->irtype = FARG;
+			var->farg = fa->farg;
 			return var;
 		}
 		fa = fa->next;
@@ -187,7 +200,8 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 		if(strcmp(vd->name, name) == 0) {
 			var->name = vd->name;
 			var->type = vd->type;
-			var->temp = vd->temp;
+			var->irtype = GLOBAL;
+			var->global = vd->global;
 			return var;
 		}
 		vd = vd->next;
@@ -197,6 +211,20 @@ lookup_variable(struct tc_globals *tg, struct tc_func *cf, const char *name) {
 	abort();
 	free(var);
 	return NULL;
+}
+
+static irexp *
+variable_to_irexp(struct variable *var) {
+	switch(var->irtype) {
+		case GLOBAL:
+			return mkirglobal(var->global);
+		case LOCAL:
+			return mkirlocal(var->local);
+		case FARG:
+			return mkirfarg(var->farg);
+		default:
+			assert(!"reached");
+	}
 }
 
 struct tc_func *
@@ -411,17 +439,19 @@ DESCEND_FUNC(vardecl) {
 	chld = chld->next;
 	assert(chld->token->type == ';');
 
-	vd->temp = gettemp();
-
 	if(arg != NULL) {
 		struct tc_func *fdata = arg;
 		*fdata->decls_last = vd;
 		fdata->decls_last = &vd->next;
+		vd->local = ++fdata->nlocals;
 
-		return mkirmove(mkirtemp(vd->temp), initexp);
+		return mkirmove(mkirlocal(vd->local), initexp);
 	} else {
 		*tg->decls_last = vd;
 		tg->decls_last = &vd->next;
+
+		vd->global = ++tg->nglobals;
+		return mkirmove(mkirglobal(vd->global), initexp);
 	}
 	return NULL;
 }
@@ -431,7 +461,7 @@ DESCEND_FUNC(fargs) {
 	struct func_arg *fa = malloc(sizeof(struct vardecl));
 	synt_tree *chld = t->fst_child;
 
-	fa->temp = gettemp();
+	fa->farg = ++fdata->nargs;
 	fa->next = NULL;
 	tc_descend(tg, chld, &fa->type);
 	chld = chld->next;
@@ -492,13 +522,7 @@ DESCEND_FUNC(fundecl) {
 	tg->curfunc = NULL;
 
 	fdata->func = getfunc();
-	int nvars = 0;
-	struct vardecl *v = fdata->decls;
-	while(v != NULL) {
-		nvars++;
-		v = v->next;
-	}
-	return mkirseq(mkirfunc(fdata->func, nvars), body);
+	return mkirseq(mkirfunc(fdata->func, fdata->nlocals), body);
 }
 
 DESCEND_FUNC(if) {
@@ -560,6 +584,7 @@ DESCEND_FUNC(assignment) {
 	struct type datatype;
 	irexp *val;
 	synt_tree *chld = t->fst_child;
+	struct irunit *ret;
 
 	assert(chld->token->type == T_WORD);
 	var = lookup_variable(tg, arg, chld->token->value.sval);
@@ -568,10 +593,10 @@ DESCEND_FUNC(assignment) {
 	chld = chld->next;
 	val = tc_descend(tg, chld, &datatype);
 	unify_types(tg, var->type, &datatype, NULL);
-	irtemp v = var->temp;
-	free(var);
 
-	return mkirmove(mkirtemp(v), val);
+	ret = mkirmove(variable_to_irexp(var), val);
+	free(var);
+	return ret;
 }
 
 DESCEND_FUNC(funcall) {
@@ -647,9 +672,9 @@ DESCEND_FUNC(expression_simple) {
 	case T_WORD: {
 		struct variable *var = lookup_variable(tg, tg->curfunc, t->token->value.sval);
 		memcpy(res, var->type, sizeof(struct type));
-		irtemp v = var->temp;
+		irexp *ret = variable_to_irexp(var);
 		free(var);
-		return mkirtemp(v);
+		return ret;
 	}
 	case T_NUMBER:
 		res->type = T_INT;

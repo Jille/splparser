@@ -8,7 +8,6 @@
 
 static irlabel labelctr = 0;
 static irfunc funcctr = 0;
-static irtemp tempctr = 0;
 
 static const char *
 irop_to_string(irop op, int shrt)
@@ -54,8 +53,14 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("NAME(%s)", lbl);
 		free(lbl);
 		break;
-	case TEMP:
-		printf("TEMP(%d)", ir->temp);
+	case LOCAL:
+		printf("LOCAL(%d)", ir->local);
+		break;
+	case GLOBAL:
+		printf("GLOBAL(%d)", ir->global);
+		break;
+	case FARG:
+		printf("FARG(%d)", ir->farg);
 		break;
 	case BINOP:
 		printf("BINOP(\n");
@@ -70,11 +75,6 @@ show_ir_tree(struct irunit *ir, int indent) {
 		printf("\n");
 		indent--;
 		print_indent(indent);
-		printf(")");
-		break;
-	case MEM:
-		printf("MEM(");
-		show_ir_tree(ir->mem, indent);
 		printf(")");
 		break;
 	case CALL:
@@ -189,11 +189,6 @@ getfunc() {
 	return ++funcctr;
 }
 
-irtemp
-gettemp() {
-	return ++tempctr;
-}
-
 irstm *
 mkirseq(irstm *left, irstm *right) {
 	irstm *ret = malloc(sizeof(struct irunit));
@@ -238,10 +233,26 @@ mkirmove(irexp *dst, irexp *src) {
 }
 
 irexp *
-mkirtemp(irtemp num) {
+mkirlocal(irlocal num) {
 	irstm *ret = malloc(sizeof(struct irunit));
-	ret->type = TEMP;
-	ret->temp = num;
+	ret->type = LOCAL;
+	ret->local = num;
+	return ret;
+}
+
+irexp *
+mkirglobal(irglobal num) {
+	irstm *ret = malloc(sizeof(struct irunit));
+	ret->type = GLOBAL;
+	ret->global = num;
+	return ret;
+}
+
+irexp *
+mkirfarg(irfarg num) {
+	irstm *ret = malloc(sizeof(struct irunit));
+	ret->type = FARG;
+	ret->farg = num;
 	return ret;
 }
 
@@ -266,13 +277,6 @@ irexp *mkirbinop(irop binop, irexp *left, irexp *right) {
 	ret->binop.op = binop;
 	ret->binop.left = left;
 	ret->binop.right = right;
-	return ret;
-}
-
-irexp *mkirmem(irexp *a) {
-	irexp *ret = malloc(sizeof(struct irunit));
-	ret->type = MEM;
-	ret->mem = a;
 	return ret;
 }
 

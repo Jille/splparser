@@ -169,14 +169,14 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		return ldc;
 	case NAME:
 		return nop;
-	case TEMP:
-		return nop;
 	case BINOP:
 		return nop;
-	case MEM:
+	case LOCAL:
+	case GLOBAL:
+	case FARG:
 		return nop;
 	case CALL: ;
-		// TODO: don't scratch the RR register
+		// TODO: don't scratch the RR register (push RR, CALL, SWAPR?)
 		// TODO: parameters
 		// TODO: what if the called function is void / returns nothing?
 		struct ssmline *bsr = malloc(sizeof(struct ssmline));
@@ -221,14 +221,15 @@ ir_to_ssm(struct irunit *ir) {
 	nop->next = NULL;
 
 	switch(ir->type) {
-	case MOVE: // Evaluate src and store the result in dst (TEMP or MEM)
-		assert(ir->move.dst->type == TEMP || ir->move.dst->type == MEM);
+	case MOVE: // Evaluate src and store the result in dst (LOCAL, GLOBAL or FARG)
+		assert(ir->move.dst->type == LOCAL || ir->move.dst->type == GLOBAL || ir->move.dst->type == FARG);
 
 		//struct ssmline *ir
 
-		if(ir->move.dst->type == TEMP) {
+		if(ir->move.dst->type == LOCAL) {
 			// Store the result in a temporary variable
 			// TODO
+			// LDL -<localevar n>
 		} else {
 			// Store the result in a memory location
 			// TODO
