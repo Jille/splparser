@@ -125,12 +125,17 @@ ssm_register_to_string(ssmregister reg) {
 
 static struct ssmline *
 ssm_move_data(ssmregister dst, ssmregister src) {
-	// XXX met dst=NONE en src=STACK wel poppen?
-	if(dst == NONE || dst == src) {
+	if(dst == src) {
 		return NULL;
 	}
 	switch(src) {
 		case STACK: ;
+			if(dst == NONE) {
+				struct ssmline *ajs = alloc_ssmline(SAJS);
+				ajs->arg1.intval = -1;
+				ajs->comment = "Move data from STACK to NONE";
+				return ajs;
+			}
 			// [2012-08-14 jille] Is STR hier de goede instructie voor?
 			struct ssmline *str = alloc_ssmline(SSTR);
 			str->arg1.regval = dst;
@@ -143,7 +148,9 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 		case R5:
 		case R6:
 		case R7:
-			if(dst == STACK) {
+			if(dst == NONE) {
+				return NULL;
+			} else if(dst == STACK) {
 				struct ssmline *ldr = alloc_ssmline(SLDR);
 				ldr->arg1.regval = src;
 				return ldr;
