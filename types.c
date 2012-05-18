@@ -884,8 +884,8 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Return, return);
 	SET_RULE_HANDLER(Stmt, stmt);
 	SET_RULE_HANDLER(Stmt+, simple_seq);
-	SET_RULE_HANDLER(Decl+, simple_seq);
+	SET_RULE_HANDLER(Decl, simple_seq);
 	SET_RULE_HANDLER(VarDecl+, simple_seq);
-	SET_RULE_HANDLER(S, init);
+	SET_RULE_HANDLER(Functions, init);
 	return tc_descend(&tg, t, NULL);
 }

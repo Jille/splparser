@@ -1,5 +1,6 @@
-S := Decl+
-Decl := VarDecl | FunDecl
+S := Decl
+Decl := VarDecl+ Functions | Functions
+Functions := FunDecl+
 VarDecl := Type T_WORD '=' Exp ';'
 FunDecl := RetType T_WORD '(' FArgs ')' '{' Stmt+ '}' | RetType T_WORD '(' ')' '{' Stmt+ '}' | RetType T_WORD '(' FArgs ')' '{' VarDecl+ Stmt+ '}' | RetType T_WORD '(' ')' '{' VarDecl+ Stmt+ '}'
 RetType := Type | T_VOID
@@ -22,6 +23,6 @@ Exp4 := Exp5 AddOp Exp4 | Exp5
 Exp5 := Exp6 MultOp Exp5 | Exp6
 Exp6 := '-' Exp6 | Exp7
 Exp7 := T_WORD | T_NUMBER | T_FALSE | T_TRUE | '(' Exp ')' | FunCall | '[' ']' | '(' Exp ',' Exp ')'
-Decl+ := Decl | Decl Decl+
 Stmt+ := Stmt | Stmt Stmt+
 VarDecl+ := VarDecl | VarDecl VarDecl+
+FunDecl+ := FunDecl | FunDecl FunDecl+

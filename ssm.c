@@ -21,6 +21,7 @@ struct ssmfuncmapping {
 static struct ssmlabelmapping *ssmlabels = NULL;
 static struct ssmfuncmapping *ssmfuncs = NULL;
 static ssmlabel ssmlabelptr = 0;
+static ssmlabel heaplabel = 0;
 static int args_for_current_function = -1;
 
 static struct ssmline *
@@ -229,9 +230,15 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		asprintf(&ret->comment, "Fetch local %d", ir->local);
 		return ret;
 	}
-	case GLOBAL:
-		nop->comment = "fetch GLOBAL";
-		return nop;
+	case GLOBAL: {
+		struct ssmline *ret = alloc_ssmline(SLDC_LABEL);
+		ret->arg1.labelval = heaplabel;
+		ret->next = alloc_ssmline(SLDA);
+		ret->next->arg1.intval = ir->global + 2;
+		ret->next->next = ssm_move_data(reg, STACK);
+		asprintf(&ret->comment, "Fetch global %d", ir->global);
+		return ret;
+	}
 	case FARG: {
 		struct ssmline *ret = alloc_ssmline(SLDL);
 		assert(args_for_current_function > 0);
@@ -310,13 +317,17 @@ ir_to_ssm(struct irunit *ir) {
 			case LOCAL:
 				// Store the result in a local variable
 				ret = alloc_ssmline(SSTL);
-				ret->arg1.labelval = ir->move.dst->local + 1;
+				ret->arg1.intval = ir->move.dst->local + 1;
 				asprintf(&ret->comment, "Store in local %d", ir->move.dst->local);
 				ssm_iterate_last(exp)->next = ret;
 				break;
 			case GLOBAL:
-				nop->comment = "Move to GLOBAL";
-				return nop;
+				ret = alloc_ssmline(SLDC_LABEL);
+				ret->arg1.labelval = heaplabel;
+				ret->next = alloc_ssmline(SSTA);
+				ret->next->arg1.intval = ir->move.dst->global + 2;
+				asprintf(&ret->comment, "Store in global %d", ir->move.dst->global);
+				ssm_iterate_last(exp)->next = ret;
 				break;
 			case FARG:
 				ret = alloc_ssmline(SSTL);
@@ -428,12 +439,15 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_INT(LDL);
 		INSTR_INT(STL);
 		INSTR_INT(AJS);
+		INSTR_INT(STA);
+		INSTR_INT(LDA);
 
 		// label parameter
 #define INSTR_LABEL(instr)	case S ## instr: printf(#instr " lbl%04d", ssm->arg1.labelval); break
 		INSTR_LABEL(BRA);
 		INSTR_LABEL(BSR);
 		INSTR_LABEL(BRF);
+		case SLDC_LABEL: printf("LDC lbl%04d", ssm->arg1.labelval); break;
 
 		// register parameter
 #define INSTR_REG(instr)	case S ## instr: printf(#instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
@@ -456,6 +470,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		printf("\n");
 		ssm = ssm->next;
 	}
+	printf("lbl%04d: NOP ; Begin of the heap\n", 0);
 }
 
 void
