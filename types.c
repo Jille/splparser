@@ -853,6 +853,7 @@ typechecker(synt_tree *t, grammar *gram) {
 	tg.gram = gram;
 	tg.funcall_rule = get_id_for_rule(gram, "FunCall");
 	tg.funcs_last = &tg.funcs;
+	tg.decls_last = &tg.decls;
 	rule_handlers = malloc((gram->lastrule + 1) * sizeof(descend_ft));
 	for(i = 0; gram->lastrule >= i; i++) {
 		rule_handlers[i] = tc_descend_simple;
