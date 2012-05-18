@@ -355,9 +355,6 @@ ir_to_ssm(struct irunit *ir) {
 			res->label = get_ssmlabel_from_irlabel(ir->seq.left->label);
 			return res;
 		} else if(ir->seq.left->type == FUNC) {
-			// reserve memory for locals: LINK, UNLINK
-			// look forward how many locals will be used in this function alone
-			// XXX LINK 0 wegoptimizen?
 			res = alloc_ssmline(SLINK);
 			res->label = get_ssmlabel_from_irfunc(ir->seq.left->func.funcid);
 			res->arg1.intval = ir->seq.left->func.vars;
