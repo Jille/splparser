@@ -826,7 +826,7 @@ DESCEND_FUNC(expression) {
 	case ':':
 		if(snd.type != '[')
 			PARSING_FAIL("List composition (:) needs a list on the right side");
-		if(snd.list_type == 0 || snd.list_type->type != fst.type)
+		if(snd.list_type != NULL && snd.list_type->type != fst.type)
 			PARSING_FAIL("List composition (:) types don't match");
 		res->type = '[';
 		res->list_type = malloc(sizeof(struct type));
