@@ -21,7 +21,6 @@ irop_to_string(irop op, int shrt)
 	case OR:      return shrt ? "||" : "OR";
 	case LSHIFT:  return shrt ? "<<" : "LSHIFT";
 	case RSHIFT:  return shrt ? ">>" : "RSHIFT";
-	case ARSHIFT: return shrt ? "<<<": "ARSHIFT";
 	case XOR:     return shrt ? "^"  : "XOR";
 	case EQ:      return shrt ? "==" : "EQ";
 	case NE:      return shrt ? "!=" : "NE";
