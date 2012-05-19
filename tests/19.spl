@@ -1,0 +1,10 @@
+Void
+plop() {
+	return;
+}
+
+Int
+main() {
+	plop();
+	return 1;
+}

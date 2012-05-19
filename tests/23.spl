@@ -1,0 +1,9 @@
+Int
+main() {
+	[Int] henk = 4 : 5 : [];
+	if(isempty(henk)) {
+	} else {
+		return head(henk);
+	}
+	return 1;
+}

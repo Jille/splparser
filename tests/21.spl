@@ -1,0 +1,6 @@
+Int
+main() {
+	[Int] henk = [];
+	henk = 4 : 5 : henk;
+	return head(tail(henk));
+}

@@ -1,0 +1,10 @@
+Int
+plop(Int a) {
+	a = a+1;
+	return a+1;
+}
+
+Int
+main() {
+	return plop(5);
+}
