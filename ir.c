@@ -115,6 +115,19 @@ show_ir_tree(struct irunit *ir, int indent) {
 		print_indent(indent);
 		printf(")");
 		break;
+	case TUPLE:
+		puts("TUPLE(");
+		indent++;
+		print_indent(indent);
+		show_ir_tree(ir->tuple.fst, indent);
+		printf(",\n");
+		print_indent(indent);
+		show_ir_tree(ir->tuple.snd, indent);
+		printf("\n");
+		indent--;
+		print_indent(indent);
+		printf(")");
+		break;
 	case MOVE:
 		puts("MOVE(");
 		indent++;
@@ -307,6 +320,13 @@ irexp *mkirlistel(irexp *exp, irexp *next) {
 	ret->type = LISTEL;
 	ret->listel.exp = exp;
 	ret->listel.next = next;
+	return ret;
+}
+irexp *mkirtuple(irexp *fst, irexp *snd) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = TUPLE;
+	ret->tuple.fst = fst;
+	ret->tuple.snd = snd;
 	return ret;
 }
 

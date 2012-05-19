@@ -8,7 +8,7 @@
 #include "types.h"
 #include "ssm.h"
 
-irfunc builtin_head, builtin_tail, builtin_isempty;
+static irfunc builtin_head, builtin_tail, builtin_isempty, builtin_fst, builtin_snd;
 
 void
 init_builtin_functions(struct tc_globals *tg) {
@@ -89,6 +89,66 @@ init_builtin_functions(struct tc_globals *tg) {
 	builtin_isempty = isempty->func;
 	*tg->funcs_last = isempty;
 	tg->funcs_last = &isempty->next;
+
+	struct tc_func *fst = calloc(1, sizeof(struct tc_func));
+	fst->returntype = malloc(sizeof(struct type));
+	fst->returntype->type = T_WORD;
+	fst->returntype->pm_name = "f";
+	fst->returntype->accept_empty_list = 0;
+	fst->name = "fst";
+	fst->args = malloc(sizeof(struct func_arg));
+	fst->args->name = "tuple";
+	fst->args->type = malloc(sizeof(struct type));
+	fst->args->type->type = '(';
+	fst->args->type->fst_type = malloc(sizeof(struct type));
+	fst->args->type->fst_type->type = T_WORD;
+	fst->args->type->fst_type->pm_name = "f";
+	fst->args->type->fst_type->accept_empty_list = 0;
+	fst->args->type->snd_type = malloc(sizeof(struct type));
+	fst->args->type->snd_type->type = T_WORD;
+	fst->args->type->snd_type->pm_name = "s";
+	fst->args->type->snd_type->accept_empty_list = 0;
+	fst->args->farg = 0;
+	fst->args->next = NULL;
+	fst->decls = NULL;
+	fst->func = getfunc();
+	fst->nargs = 1;
+	fst->nlocals = 0;
+	fst->next = NULL;
+
+	builtin_fst = fst->func;
+	*tg->funcs_last = fst;
+	tg->funcs_last = &fst->next;
+
+	struct tc_func *snd = calloc(1, sizeof(struct tc_func));
+	snd->returntype = malloc(sizeof(struct type));
+	snd->returntype->type = T_WORD;
+	snd->returntype->pm_name = "s";
+	snd->returntype->accept_empty_list = 0;
+	snd->name = "snd";
+	snd->args = malloc(sizeof(struct func_arg));
+	snd->args->name = "tuple";
+	snd->args->type = malloc(sizeof(struct type));
+	snd->args->type->type = '(';
+	snd->args->type->fst_type = malloc(sizeof(struct type));
+	snd->args->type->fst_type->type = T_WORD;
+	snd->args->type->fst_type->pm_name = "f";
+	snd->args->type->fst_type->accept_empty_list = 0;
+	snd->args->type->snd_type = malloc(sizeof(struct type));
+	snd->args->type->snd_type->type = T_WORD;
+	snd->args->type->snd_type->pm_name = "s";
+	snd->args->type->snd_type->accept_empty_list = 0;
+	snd->args->farg = 0;
+	snd->args->next = NULL;
+	snd->decls = NULL;
+	snd->func = getfunc();
+	snd->nargs = 1;
+	snd->nlocals = 0;
+	snd->next = NULL;
+
+	builtin_snd = snd->func;
+	*tg->funcs_last = snd;
+	tg->funcs_last = &snd->next;
 }
 
 void
@@ -105,6 +165,14 @@ ssm_builtin_functions() {
 	printf("         LDA 1\n");
 	printf("         LDC 0\n");
 	printf("         NE\n");
+	printf("         STR RR\n");
+	printf("         RET\n");
+	printf("lbl%04d: LDS -1 ; Builtin function fst()\n", get_ssmlabel_from_irfunc(builtin_fst));
+	printf("         LDA 0\n");
+	printf("         STR RR\n");
+	printf("         RET\n");
+	printf("lbl%04d: LDS -1 ; Builtin function snd()\n", get_ssmlabel_from_irfunc(builtin_snd));
+	printf("         LDA 1\n");
 	printf("         STR RR\n");
 	printf("         RET\n");
 }

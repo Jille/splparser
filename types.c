@@ -698,16 +698,16 @@ DESCEND_FUNC(expression) {
 			if(t->fst_child->next->next->next == NULL) { // Exp within braces
 				assert(t->fst_child->next->next->token->type == ')');
 				return tc_descend_expression(tg, t->fst_child->next, arg);
-			} else { // Tuple
-				assert(t->fst_child->next->next->token->type == ',');
-				assert(t->fst_child->next->next->next->next->token->type == ')');
-				res->type = '(';
-				res->fst_type = calloc(1, sizeof(struct type));
-				res->snd_type = calloc(1, sizeof(struct type));
-				tc_descend_expression(tg, t->fst_child->next, res->fst_type);
-				tc_descend_expression(tg, t->fst_child->next->next->next, res->snd_type);
 			}
-			return mkirconst(0); // XXX
+			// Tuple
+			assert(t->fst_child->next->next->token->type == ',');
+			assert(t->fst_child->next->next->next->next->token->type == ')');
+			res->type = '(';
+			res->fst_type = calloc(1, sizeof(struct type));
+			res->snd_type = calloc(1, sizeof(struct type));
+			irexp *fst = tc_descend_expression(tg, t->fst_child->next, res->fst_type);
+			irexp *snd = tc_descend_expression(tg, t->fst_child->next->next->next, res->snd_type);
+			return mkirtuple(fst, snd);
 		default:
 			// it's something simple, or all has failed
 			return tc_descend_expression_simple(tg, t->fst_child, arg);

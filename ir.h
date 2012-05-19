@@ -1,7 +1,7 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL } irtype;
+typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL, TUPLE } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, ARSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 
 struct irunit;
@@ -41,6 +41,10 @@ struct irunit {
 				irexp *exp;
 				irexp *next;
 			} listel;
+			struct {
+				irexp *fst;
+				irexp *snd;
+			} tuple;
 		};
 		// Statements
 		union {
@@ -94,6 +98,7 @@ irexp *mkirbinop(irop binop, irexp *left, irexp *right);
 irexp *mkircall(irfunc func, struct irexplist *args);
 irexp *mkireseq(irstm *stm, irexp *exp);
 irexp *mkirlistel(irexp *exp, irexp *next);
+irexp *mkirtuple(irexp *fst, irexp *snd);
 irstm *mkirexp(irexp *exp);
 irstm *mkirjump(irlabel label);
 irstm *mkircjump(irexp *exp, irlabel f);
