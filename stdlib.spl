@@ -10,7 +10,6 @@ ispositive(Int a) {
 	return a >= 0;
 }
 
-Int
-random() {
-	return random;
-}
+Int random() EXTERN rand;
+Int getpid() EXTERN getpid;
+Void srand(Int a) EXTERN srand;

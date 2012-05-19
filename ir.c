@@ -181,7 +181,10 @@ show_ir_tree(struct irunit *ir, int indent) {
 		free(lbl);
 		break;
 	case FUNC:
-		printf("FUNC(%d)", ir->func.funcid);
+		printf("FUNC(%d, %d, %d)", ir->func.funcid, ir->func.args, ir->func.vars);
+		break;
+	case EXTFUNC:
+		printf("EXTFUNC(%d, %s)", ir->extfunc.funcid, ir->extfunc.name);
 		break;
 	case RET:
 		printf("RET(");
@@ -372,6 +375,16 @@ irstm *mkirfunc(irfunc f, int nargs, int nvars) {
 	ret->func.funcid = f;
 	ret->func.args = nargs;
 	ret->func.vars = nvars;
+	return ret;
+}
+irstm *mkirextfunc(irfunc f, char *name, splctype returntype, int nargs, struct splctypelist *args) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = EXTFUNC;
+	ret->extfunc.funcid = f;
+	ret->extfunc.name = name;
+	ret->extfunc.returntype = returntype;
+	ret->extfunc.nargs = nargs;
+	ret->extfunc.args = args;
 	return ret;
 }
 irstm *mkirtrap(int syscall, irexp *arg) {

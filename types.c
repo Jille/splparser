@@ -430,6 +430,26 @@ DESCEND_FUNC(fargs) {
 	return NULL;
 }
 
+static splctype
+convert_type_to_ctype(struct type *type) {
+	switch(type->type) {
+		case T_INT:
+			return C_INT;
+		case T_BOOL:
+			return C_BOOL;
+		case T_WORD:
+			return C_UNION;
+		case T_VOID:
+			return C_VOID;
+		case '[':
+			return C_LIST;
+		case '(':
+			return C_TUPLE;
+		default:
+			assert(!"reached");
+	}
+}
+
 DESCEND_FUNC(fundecl) {
 	struct tc_func *fdata = calloc(1, sizeof(struct tc_func));
 	synt_tree *chld = t->fst_child;
@@ -437,6 +457,7 @@ DESCEND_FUNC(fundecl) {
 	irstm *body = NULL;
 
 	fdata->decls_last = &fdata->decls;
+	fdata->func = getfunc();
 
 	tc_descend(tg, chld, &fdata->returntype);
 	chld = chld->next;
@@ -451,29 +472,44 @@ DESCEND_FUNC(fundecl) {
 	}
 	assert(chld->token->type == ')');
 	chld = chld->next;
-	assert(chld->token->type == '{');
-	chld = chld->next;
 
 	*tg->funcs_last = fdata;
 	tg->funcs_last = &fdata->next;
 
-	do {
-		// vardecls en stmts
-		struct irunit *res = tc_descend(tg, chld, fdata);
-		if(res != NULL) {
-			if(body == NULL) {
-				body = res;
-			} else {
-				body = mkirseq(body, res);
-			}
+	if(chld->token->type == T_EXTERN) {
+		struct splctypelist *cargs = NULL;
+		struct splctypelist **cargs_last = &cargs;
+		struct func_arg *fa = fdata->args;
+		while(fa != NULL) {
+			*cargs_last = malloc(sizeof(struct splctypelist));
+			(*cargs_last)->type = convert_type_to_ctype(fa->type);
+			(*cargs_last)->next = NULL;
+			cargs_last = &(*cargs_last)->next;
+			fa = fa->next;
 		}
 		chld = chld->next;
-	} while(chld->token->type != '}');
+		tg->curfunc = NULL;
+		return mkirextfunc(fdata->func, chld->token->value.sval, convert_type_to_ctype(fdata->returntype), fdata->nargs, cargs);
+	} else {
+		assert(chld->token->type == '{');
+		chld = chld->next;
 
-	tg->curfunc = NULL;
+		do {
+			// vardecls en stmts
+			struct irunit *res = tc_descend(tg, chld, fdata);
+			if(res != NULL) {
+				if(body == NULL) {
+					body = res;
+				} else {
+					body = mkirseq(body, res);
+				}
+			}
+			chld = chld->next;
+		} while(chld->token->type != '}');
+		tg->curfunc = NULL;
 
-	fdata->func = getfunc();
-	return mkirseq(mkirfunc(fdata->func, fdata->nargs, fdata->nlocals), body);
+		return mkirseq(mkirfunc(fdata->func, fdata->nargs, fdata->nlocals), body);
+	}
 }
 
 DESCEND_FUNC(if) {
@@ -826,7 +862,8 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Type, type);
 	SET_RULE_HANDLER(VarDecl, vardecl);
 	SET_RULE_HANDLER(RetType, rettype);
-	SET_RULE_HANDLER(FunDecl, fundecl);
+	SET_RULE_HANDLER(SplFunDecl, fundecl);
+	SET_RULE_HANDLER(ExtFunDecl, fundecl);
 	SET_RULE_HANDLER(FArgs, fargs);
 	SET_RULE_HANDLER(If, if);
 	SET_RULE_HANDLER(While, while);

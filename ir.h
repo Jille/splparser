@@ -1,8 +1,9 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL, TUPLE, GINIT } irtype;
+typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL, TUPLE, GINIT, EXTFUNC } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
+typedef enum { C_VOID, C_UNION, C_RAW, C_INT, C_BOOL, C_LIST, C_TUPLE } splctype;
 
 struct irunit;
 typedef struct irunit irexp;
@@ -12,6 +13,8 @@ typedef int irfunc;
 typedef int irlocal;
 typedef int irglobal;
 typedef int irfarg;
+
+struct splctypelist;
 
 struct irunit {
 	irtype type;
@@ -74,6 +77,13 @@ struct irunit {
 				irexp *arg;
 			} trap;
 			int nglobals;
+			struct {
+				irfunc funcid;
+				char *name;
+				splctype returntype;
+				int nargs;
+				struct splctypelist *args;
+			} extfunc;
 		};
 	};
 };
@@ -81,6 +91,11 @@ struct irunit {
 struct irexplist {
 	irexp *exp;
 	struct irexplist *next;
+};
+
+struct splctypelist {
+	splctype type;
+	struct splctypelist *next;
 };
 
 /* ir.c */
@@ -106,6 +121,7 @@ irstm *mkircjump(irexp *exp, irlabel f);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nargs, int nvars);
+irstm *mkirextfunc(irfunc f, char *name, splctype returntype, int nargs, struct splctypelist *args);
 irstm *mkirtrap(int syscall, irexp *arg);
 irstm *mkirhalt(void);
 irstm *mkirginit(int globals);

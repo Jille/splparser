@@ -3,7 +3,9 @@ Decl := GlobalVars Functions | Functions
 GlobalVars := VarDecl+
 Functions := FunDecl+
 VarDecl := Type T_WORD '=' Exp ';'
-FunDecl := RetType T_WORD '(' FArgs ')' '{' Stmt+ '}' | RetType T_WORD '(' ')' '{' Stmt+ '}' | RetType T_WORD '(' FArgs ')' '{' VarDecl+ Stmt+ '}' | RetType T_WORD '(' ')' '{' VarDecl+ Stmt+ '}'
+FunDecl := ExtFunDecl | SplFunDecl
+SplFunDecl := RetType T_WORD '(' FArgs ')' '{' Stmt+ '}' | RetType T_WORD '(' ')' '{' Stmt+ '}' | RetType T_WORD '(' FArgs ')' '{' VarDecl+ Stmt+ '}' | RetType T_WORD '(' ')' '{' VarDecl+ Stmt+ '}'
+ExtFunDecl := RetType T_WORD '(' FArgs ')' T_EXTERN T_WORD ';' | RetType T_WORD '(' ')' T_EXTERN T_WORD ';'
 RetType := Type | T_VOID
 Type := T_INT | T_BOOL | '(' Type ',' Type ')' | '[' Type ']' | T_WORD
 FArgs := Type T_WORD | Type T_WORD ',' FArgs

@@ -464,6 +464,11 @@ ir_to_ssm(struct irunit *ir) {
 		lines[5]->arg1.regval = HP;
 		lines[6] = NULL;
 		return chain_ssmlines(lines);
+	case EXTFUNC: ;
+		struct ssmline *efunc = alloc_ssmline(SRET);
+		efunc->label = get_ssmlabel_from_irfunc(ir->extfunc.funcid);
+		efunc->comment = "External functions are not supported in SSM";
+		return efunc;
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");

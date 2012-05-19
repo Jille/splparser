@@ -15,6 +15,7 @@
 #include "types.h"
 #include "ir.h"
 #include "ssm.h"
+#include "cout.h"
 #include "separate.h"
 
 // #define VERBOSE_PARSER_DEBUG

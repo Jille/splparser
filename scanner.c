@@ -208,6 +208,8 @@ done:
 		st->active->type = T_BOOL;
 	} else if(strcmp(buf, "Void") == 0) {
 		st->active->type = T_VOID;
+	} else if(strcmp(buf, "EXTERN") == 0) {
+		st->active->type = T_EXTERN;
 	} else {
 		asprintf(&st->error, "Keyword '%s...' is unknown.", buf);
 		return SCN_ERR;

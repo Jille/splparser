@@ -10,15 +10,13 @@
 #include "types.h"
 #include "ssm.h"
 #include "builtins.h"
+#include "cout.h"
 
 #define NO_DEFAULT default: assert(!"reached")
-
-typedef enum { C_UNION, C_RAW, C_INT, C_BOOL, C_LIST, C_TUPLE } splctype;
 
 static void convert_splctype(irexp *ir, splctype to, splctype from);
 static void irexp_to_c(irexp *ir, splctype how);
 static void irstm_to_c(irstm *ir, int prototype);
-void ir_to_c(irstm *ir);
 
 static void
 convert_splctype(irexp *ir, splctype to, splctype from) {
@@ -239,6 +237,60 @@ irstm_to_c(irstm *ir, int prototype) {
 						printf(", l%d", i);
 					}
 					puts(";");
+				}
+			}
+			break;
+		case EXTFUNC:
+			if(!prototype) {
+				puts("}\n");
+			}
+			printf("spltype f%d(", ir->extfunc.funcid);
+			if(ir->extfunc.nargs > 0) {
+				printf("spltype a0");
+				int i;
+				for(i = 1; ir->extfunc.nargs > i; i++) {
+					printf(", spltype a%d", i);
+				}
+			}
+			if(prototype) {
+				puts(");");
+			} else {
+				puts(") {");
+				printf("\t");
+				if(ir->extfunc.returntype != C_VOID) {
+					printf("return ");
+					if(ir->extfunc.returntype != C_UNION) {
+						printf("(spltype)");
+					}
+				}
+				printf("%s(", ir->extfunc.name);
+				struct splctypelist *args = ir->extfunc.args;
+				int n = 0;
+				while(args != NULL) {
+					switch(args->type) {
+						case C_INT:
+							printf("a%d.ival", n);
+							break;
+						case C_BOOL:
+							printf("a%d.bval", n);
+							break;
+						case C_UNION:
+							printf("a%d", n);
+							break;
+						case C_LIST:
+							printf("a%d.lval", n);
+							break;
+						case C_TUPLE:
+							printf("a%d.tval", n);
+							break;
+						NO_DEFAULT;
+					}
+					n++;
+					args = args->next;
+				}
+				puts(");");
+				if(ir->extfunc.returntype == C_VOID) {
+					puts("\treturn (spltype)0;");
 				}
 			}
 			break;
