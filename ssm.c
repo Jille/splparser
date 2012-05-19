@@ -158,10 +158,10 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 				ldr->arg1.regval = src;
 				return ldr;
 			} else {
-				struct ssmline *swprr = alloc_ssmline(SSWPRR); // XXX LDRR is een copy ipv swap, dus beter?
-				swprr->arg1.regval = dst;
-				swprr->arg2.regval = src;
-				return swprr;
+				struct ssmline *ldrr = alloc_ssmline(SLDRR);
+				ldrr->arg1.regval = dst;
+				ldrr->arg2.regval = src;
+				return ldrr;
 			}
 			break;
 		case NONE:
@@ -508,6 +508,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		// register parameter, register parameter
 #define INSTR_REG_REG(instr)	case S ## instr: printf(#instr " %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break
 		INSTR_REG_REG(SWPRR);
+		INSTR_REG_REG(LDRR);
 
 		default:
 			printf("Unknown instruction %d\n", ssm->instr);
