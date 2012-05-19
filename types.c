@@ -74,7 +74,7 @@ typedef struct irunit *(*descend_ft)(DESCEND_ARGS);
 
 descend_ft *rule_handlers;
 
-irfunc builtin_head;
+irfunc builtin_head, builtin_tail;
 
 void
 show_type(int indent, struct type *t)
@@ -885,6 +885,34 @@ init_builtin_functions(struct tc_globals *tg) {
 	builtin_head = head->func;
 	*tg->funcs_last = head;
 	tg->funcs_last = &head->next;
+
+	struct tc_func *tail = calloc(1, sizeof(struct tc_func));
+	tail->returntype = malloc(sizeof(struct type));
+	tail->returntype->type = '[';
+	tail->returntype->list_type = malloc(sizeof(struct type));
+	tail->returntype->list_type->type = T_WORD;
+	tail->returntype->list_type->pm_name = "t";
+	tail->returntype->list_type->accept_empty_list = 0; // ?
+	tail->name = "tail";
+	tail->args = malloc(sizeof(struct func_arg));
+	tail->args->name = "list";
+	tail->args->type = malloc(sizeof(struct type));
+	tail->args->type->type = '[';
+	tail->args->type->list_type = malloc(sizeof(struct type));
+	tail->args->type->list_type->type = T_WORD;
+	tail->args->type->list_type->pm_name = "t";
+	tail->args->type->list_type->accept_empty_list = 0; // ?
+	tail->args->farg = 0;
+	tail->args->next = NULL;
+	tail->decls = NULL;
+	tail->func = getfunc();
+	tail->nargs = 1;
+	tail->nlocals = 0;
+	tail->next = NULL;
+
+	builtin_tail = tail->func;
+	*tg->funcs_last = tail;
+	tg->funcs_last = &tail->next;
 }
 
 struct irunit *
