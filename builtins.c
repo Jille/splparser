@@ -176,3 +176,22 @@ ssm_builtin_functions() {
 	printf("         STR RR\n");
 	printf("         RET\n");
 }
+
+void
+c_builtin_functions() {
+	printf("spltype f%d /* head */(spltype list) {\n", builtin_head);
+	puts("	return list.lval->value;");
+	puts("}");
+	printf("spltype f%d /* tail */(spltype list) {\n", builtin_tail);
+	puts("	return (spltype)list.lval->next;");
+	puts("}");
+	printf("spltype f%d /* isempty */(spltype list) {\n", builtin_isempty);
+	puts("	return (spltype)(list.lval->next == NULL);");
+	puts("}");
+	printf("spltype f%d /* fst */(spltype list) {\n", builtin_fst);
+	puts("	return list.tval->fst;");
+	puts("}");
+	printf("spltype f%d /* snd */(spltype list) {\n", builtin_snd);
+	puts("	return list.tval->snd;");
+	puts("}");
+}
