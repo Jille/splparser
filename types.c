@@ -944,6 +944,7 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Stmt+, simple_seq);
 	SET_RULE_HANDLER(Decl, simple_seq);
 	SET_RULE_HANDLER(VarDecl+, simple_seq);
+	SET_RULE_HANDLER(FunDecl+, simple_seq);
 	SET_RULE_HANDLER(Functions, init);
 
 	init_builtin_functions(&tg);
