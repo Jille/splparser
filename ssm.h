@@ -25,7 +25,9 @@ struct ssmline {
 	struct ssmline *next;
 };
 
+/* ssm.c */
+ssmlabel get_ssmlabel_from_irlabel(irlabel ir);
+ssmlabel get_ssmlabel_from_irfunc(irfunc ir);
 struct ssmline *ir_to_ssm(struct irunit *ir);
 void write_ssm(struct ssmline *ssm, FILE *fd);
 void show_ssm(struct ssmline *ssm);
-

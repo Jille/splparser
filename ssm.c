@@ -2,8 +2,14 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdlib.h>
-#include "ssm.h"
+#include "generator.h"
+#include "scanner.h"
+#include "parser.h"
+#include "grammar.h"
 #include "ir.h"
+#include "types.h"
+#include "ssm.h"
+#include "builtins.h"
 
 // Ordered mapping of irlabels to ssmlabels
 struct ssmlabelmapping {
@@ -24,8 +30,6 @@ static ssmlabel ssmlabelptr = 0;
 static ssmlabel heaplabel = 0;
 static int args_for_current_function = -1;
 
-extern irfunc builtin_head, builtin_tail, builtin_isempty;
-
 static struct ssmline *
 alloc_ssmline(ssminstr instr) {
 	struct ssmline *ssm = malloc(sizeof(struct ssmline));
@@ -42,7 +46,7 @@ ssmline_set_comment_ir(struct ssmline *ssm, struct irunit *ir) {
 	asprintf(&ssm->comment, "IR %d", ir->type);
 }
 
-static ssmlabel
+ssmlabel
 get_ssmlabel_from_irlabel(irlabel ir) {
 	if(ssmlabels != NULL && ssmlabels->ir == ir)
 		return ssmlabels->ssm;
@@ -71,7 +75,7 @@ get_ssmlabel_from_irlabel(irlabel ir) {
 	return newthis->ssm;
 }
 
-static ssmlabel
+ssmlabel
 get_ssmlabel_from_irfunc(irfunc ir) {
 	if(ssmfuncs != NULL && ssmfuncs->ir == ir)
 		return ssmfuncs->ssm;
@@ -528,20 +532,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		printf("\n");
 		ssm = ssm->next;
 	}
-	printf("lbl%04d: LDS -1 ; Builtin function head()\n", get_ssmlabel_from_irfunc(builtin_head));
-	printf("         LDA 0\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
-	printf("lbl%04d: LDS -1 ; Builtin function tail()\n", get_ssmlabel_from_irfunc(builtin_tail));
-	printf("         LDA 1\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
-	printf("lbl%04d: LDS -1 ; Builtin function isempty()\n", get_ssmlabel_from_irfunc(builtin_isempty));
-	printf("         LDA 1\n");
-	printf("         LDC 0\n");
-	printf("         NE\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
+	ssm_builtin_functions();
 	printf("lbl%04d: NOP ; Begin of the heap\n", 0);
 }
 

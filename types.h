@@ -1,3 +1,5 @@
+#include "ir.h"
+
 #define GLOBAL_SYMBOL 0
 #define CALL_SYMBOL 1
 #define LOCAL_SYMBOL 2
@@ -25,5 +27,62 @@ struct symbol {
 	struct type *type;
 	char *name;
 };
+
+struct vardecl {
+	char *name;
+	struct type *type;
+	union {
+		irlocal local;
+		irglobal global;
+	};
+	struct vardecl *next;
+};
+struct func_arg {
+	char *name;
+	struct type *type;
+	irfarg farg;
+	struct func_arg *next;
+};
+struct pm_bind {
+	struct type *pm;
+	struct type *bound;
+	struct pm_bind *next;
+};
+struct variable {
+	char *name;
+	struct type *type;
+	irtype irtype;
+	union {
+		irlocal local;
+		irglobal global;
+		irfarg farg;
+	};
+};
+struct tc_func {
+	struct type *returntype;
+	char *name;
+	struct func_arg *args;
+	struct vardecl *decls;
+	struct vardecl **decls_last;
+	struct type *pm_types;
+	irfunc func;
+	int nargs;
+	int nlocals;
+	struct tc_func *next;
+};
+struct tc_globals {
+	grammar *gram;
+	int funcall_rule;
+	struct type *types;
+	struct tc_func *funcs;
+	struct tc_func **funcs_last;
+	struct vardecl *decls;
+	struct vardecl **decls_last;
+	int nglobals;
+
+	// Temporary hack
+	struct tc_func *curfunc;
+};
+
 
 struct irunit *typechecker(synt_tree *t, grammar *gram);
