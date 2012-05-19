@@ -539,7 +539,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		ssm = ssm->next;
 	}
 	ssm_builtin_functions();
-	printf("lbl%04d: NOP ; Begin of the heap\n", 0);
+	printf("lbl%04d: NOP ; Begin of the heap\n", heaplabel);
 }
 
 void
