@@ -244,8 +244,8 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		return ret;
 	}
 	case GLOBAL: {
-		struct ssmline *ret = alloc_ssmline(SLDC_LABEL);
-		ret->arg1.labelval = heaplabel;
+		struct ssmline *ret = alloc_ssmline(SLDR);
+		ret->arg1.regval = R5;
 		ret->next = alloc_ssmline(SLDA);
 		ret->next->arg1.intval = ir->global + 2;
 		ret->next->next = ssm_move_data(reg, STACK);
@@ -378,8 +378,8 @@ ir_to_ssm(struct irunit *ir) {
 				ssm_iterate_last(exp)->next = ret;
 				break;
 			case GLOBAL:
-				ret = alloc_ssmline(SLDC_LABEL);
-				ret->arg1.labelval = heaplabel;
+				ret = alloc_ssmline(SLDR);
+				ret->arg1.regval = R5;
 				ret->next = alloc_ssmline(SSTA);
 				ret->next->arg1.intval = ir->move.dst->global + 2;
 				asprintf(&ret->comment, "Store in global %d", ir->move.dst->global);
@@ -449,6 +449,21 @@ ir_to_ssm(struct irunit *ir) {
 		nop->label = get_ssmlabel_from_irlabel(ir->label);
 		nop->comment = "Gewoon een label";
 		return nop;
+	case GINIT: ;
+		struct ssmline *lines[7];
+		lines[0] = alloc_ssmline(SLDR);
+		lines[0]->arg1.regval = HP;
+		lines[1] = alloc_ssmline(SSTR);
+		lines[1]->arg1.regval = R5;
+		lines[2] = alloc_ssmline(SLDR);
+		lines[2]->arg1.regval = HP;
+		lines[3] = alloc_ssmline(SLDC);
+		lines[3]->arg1.intval = ir->nglobals;
+		lines[4] = alloc_ssmline(SADD);
+		lines[5] = alloc_ssmline(SSTR);
+		lines[5]->arg1.regval = HP;
+		lines[6] = NULL;
+		return chain_ssmlines(lines);
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");
@@ -457,12 +472,6 @@ ir_to_ssm(struct irunit *ir) {
 
 void
 write_ssm(struct ssmline *ssm, FILE *fd) {
-/*
-	printf("         LDC %d ; Initialize the HP\n", 100); // XXX initalizen op het aantal globale variabelen + 2
-	printf("         LDC lbl%04d\n", heaplabel);
-	printf("         ADD");
-	printf("         STR HP");
-*/
 	while(ssm != NULL) {
 		if(ssm->label == 0) {
 			printf("         ");
@@ -508,7 +517,6 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_LABEL(BRA);
 		INSTR_LABEL(BSR);
 		INSTR_LABEL(BRF);
-		case SLDC_LABEL: printf("LDC lbl%04d", ssm->arg1.labelval); break;
 
 		// register parameter
 #define INSTR_REG(instr)	case S ## instr: printf(#instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
