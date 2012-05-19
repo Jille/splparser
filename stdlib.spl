@@ -1,0 +1,16 @@
+Int random = 4;
+
+Int
+incr(Int a) {
+	return a+1;
+}
+
+Bool
+ispositive(Int a) {
+	return a >= 0;
+}
+
+Int
+random() {
+	return random;
+}

@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <getopt.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "lazyarray.h"
 #include "scanner.h"
 #include "prototypes.h"
@@ -11,46 +15,130 @@
 #include "types.h"
 #include "ir.h"
 #include "ssm.h"
+#include "separate.h"
 
 // #define VERBOSE_PARSER_DEBUG
 
+static synt_tree *parse_input_files(grammar *gram, char **args);
 int parser(lazyarray *, grammar*, synt_tree**, synt_error*);
 int ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e);
 
 struct attempt *att_head;
 
+static int usestdlib = 1;
+static int parseonly = 0;
+
 int
 main(int argc, char **argv) {
-	char *file = "test.spl";
-	if(argc == 2) {
-		file = argv[1];
+	int opt;
+	char *assembly = (void *)-1;
+	char *ccode = (void *)-1;
+	char *gramfile = "grammar.g";
+
+	while((opt = getopt(argc, argv, "pcs::g:L")) != -1) {
+		switch(opt) {
+			case 'p':
+				parseonly = 1;
+				break;
+			case 's':
+				assembly = optarg;
+				break;
+			case 'c':
+				// XXX file laten accepteren zodra ir_to_c() dat kan
+				ccode = NULL;
+				break;
+			case 'g':
+				gramfile = optarg;
+				break;
+			case 'L':
+				usestdlib = 0;
+				break;
+			default:
+				fprintf(stderr, "Usage: %s [-pL] [-s [out.ssm]] [-c] [-g grammar.g]\n", argv[0]);
+				return 1;
+		}
 	}
-	lazyarray *g  = lazyarray_create(gen_tokens, file, 1);
+
 	// XXX load the grammar in another thread
-	grammar *gram = parse_grammar("grammar.g");
+	grammar *gram = parse_grammar(gramfile);
+	synt_tree *t = parse_input_files(gram, argv + optind);
 
-	synt_error *e = create_synt_error();
-	synt_tree *t;
-	if(!parser(g, gram, &t, e)) {
-		printf("Failed to parse, error on line %d: %s\n", e->row, e->error);
-		return 1;
+	if(usestdlib) {
+		synt_tree *stdlib = read_synt_tree("stdlib.ast");
+		t = merge_synt_trees(gram, stdlib, t);
 	}
-
 	printf("Syntax tree:\n");
 	show_synt_tree(t, 0, gram);
+
+	if(parseonly) {
+		return 0;
+	}
 
 	struct irunit *ir = typechecker(t, gram);
 	show_ir_tree(ir, 0);
 	printf("\n");
 
-	struct ssmline *ssm = ir_to_ssm(ir);
-	show_ssm(ssm);
+	if(assembly != (void *)-1) {
+		struct ssmline *ssm = ir_to_ssm(ir);
+		if(assembly == NULL) {
+			show_ssm(ssm);
+		} else {
+			FILE *fh = fopen(assembly, "w");
+			write_ssm(ssm, fh);
+			fclose(fh);
+		}
+	}
 
-	ir_to_c(ir);
+	if(ccode != (void *)-1) {
+		// XXX support voor writen naar een file
+		ir_to_c(ir);
+	}
 
 	free(t);
-	lazyarray_destroy(g);
 	return 0;
+}
+
+static synt_tree *
+parse_input_files(grammar *gram, char **args) {
+	char *def[] = { "test.spl" };
+	synt_tree *master = NULL;
+	if(*args == NULL) {
+		args = def;
+	}
+	while(*args != NULL) {
+		synt_tree *t;
+		if(strstr(*args, ".ast") != NULL) {
+			t = read_synt_tree(*args);
+		} else {
+			lazyarray *g  = lazyarray_create(gen_tokens, *args, 1);
+			synt_error *e = create_synt_error();
+			if(!parser(g, gram, &t, e)) {
+				printf("Failed to parse %s, error on line %d: %s\n", *args, e->row, e->error);
+				exit(1);
+			}
+			lazyarray_destroy(g);
+			if(parseonly) {
+				char *astfile, *tmp;
+				asprintf(&astfile, "%s.ast", *args);
+				if((tmp = strstr(astfile, ".spl")) != NULL) {
+					strcpy(tmp, ".ast");
+				}
+				write_synt_tree(astfile, t);
+			}
+			if(strcmp(*args, "stdlib.spl") == 0) {
+				usestdlib = 0;
+			}
+		}
+		t->next = master;
+		master = t;
+		args++;
+	}
+	while(master->next != NULL) {
+		synt_tree *next = master->next;
+		master->next = NULL;
+		master = merge_synt_trees(gram, next, master);
+	}
+	return master;
 }
 
 /**
