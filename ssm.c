@@ -115,8 +115,8 @@ ssm_register_to_string(ssmregister reg) {
 	case PC: return "PC";
 	case SP: return "SP";
 	case MP: return "MP";
+	case HP: return "HP";
 	case RR: return "RR";
-	case R4: return "R4";
 	case R5: return "R5";
 	case R6: return "R6";
 	case R7: return "R7";
@@ -146,8 +146,8 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 		case PC:
 		case SP:
 		case MP:
+		case HP:
 		case RR:
-		case R4:
 		case R5:
 		case R6:
 		case R7:
@@ -296,32 +296,32 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		/*
 			<fetch exp>
 			<fetch next>
-			LDR R7
+			LDR HP
 			STMA 0 2
-			LDR R7
+			LDR HP
 			LDC 2
 			ADD
-			STR R7
+			STR HP
 		*/
 		struct ssmline *ret[8];
 		ret[0] = alloc_ssmline(SLDR);
-		ret[0]->arg1.regval = R7;
+		ret[0]->arg1.regval = HP;
 		ret[1] = alloc_ssmline(SSTMA);
 		ret[1]->arg1.intval = 0;
 		ret[1]->arg2.intval = 2;
-		ret[2] = ssm_move_data(reg, R7);
+		ret[2] = ssm_move_data(reg, HP);
 		if(ret[2] == NULL) {
 			// Dit is niet heel mooi, maar chain_ssmlines kan (nog?) niet overweg met NULL-values ertussen
 			ret[2] = alloc_ssmline(SNOP);
 			ret[2]->comment = "resultaat is niet nodig.";
 		}
 		ret[3] = alloc_ssmline(SLDR);
-		ret[3]->arg1.regval = R7;
+		ret[3]->arg1.regval = HP;
 		ret[4] = alloc_ssmline(SLDC);
 		ret[4]->arg1.intval = 2;
 		ret[5] = alloc_ssmline(SADD);
 		ret[6] = alloc_ssmline(SSTR);
-		ret[6]->arg1.regval = R7;
+		ret[6]->arg1.regval = HP;
 		ret[7] = NULL;
 		struct ssmline *exp = ir_exp_to_ssm(ir->listel.exp, STACK);
 		struct ssmline *next = ir_exp_to_ssm(ir->listel.next, STACK);
@@ -449,10 +449,12 @@ ir_to_ssm(struct irunit *ir) {
 
 void
 write_ssm(struct ssmline *ssm, FILE *fd) {
+/*
 	printf("         LDC %d ; Initialize the HP\n", 100); // XXX initalizen op het aantal globale variabelen + 2
 	printf("         LDC lbl%04d\n", heaplabel);
-	puts("         ADD");
-	puts("         STR R7");
+	printf("         ADD");
+	printf("         STR HP");
+*/
 	while(ssm != NULL) {
 		if(ssm->label == 0) {
 			printf("         ");
