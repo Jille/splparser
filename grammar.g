@@ -1,5 +1,6 @@
 S := Decl
-Decl := VarDecl+ Functions | Functions
+Decl := GlobalVars Functions | Functions
+GlobalVars := VarDecl+
 Functions := FunDecl+
 VarDecl := Type T_WORD '=' Exp ';'
 FunDecl := RetType T_WORD '(' FArgs ')' '{' Stmt+ '}' | RetType T_WORD '(' ')' '{' Stmt+ '}' | RetType T_WORD '(' FArgs ')' '{' VarDecl+ Stmt+ '}' | RetType T_WORD '(' ')' '{' VarDecl+ Stmt+ '}'

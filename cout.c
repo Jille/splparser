@@ -167,7 +167,7 @@ irexp_to_c(irexp *ir, splctype how) {
 
 void
 irstm_to_c(irstm *ir, int prototype) {
-	if(prototype && ir->type != SEQ && ir->type != FUNC) {
+	if(prototype && ir->type != SEQ && ir->type != FUNC && ir->type != GINIT) {
 		return;
 	}
 	switch(ir->type) {
@@ -242,6 +242,16 @@ irstm_to_c(irstm *ir, int prototype) {
 				}
 			}
 			break;
+		case GINIT:
+			if(prototype && ir->nglobals > 0) {
+				printf("spltype g0");
+				int i;
+				for(i = 1; ir->nglobals > i; i++) {
+					printf(", g%d", i);
+				}
+				puts(";");
+			}
+			break;
 		NO_DEFAULT;
 	}
 }
@@ -267,7 +277,6 @@ ir_to_c(irstm *ir) {
 	puts("	spltype snd;");
 	puts("} spltuple;");
 	puts("");
-	puts("/* prototypes */");
 	irstm_to_c(ir, 1);
 	puts("");
 	puts("spltype create_listel(spltype el, spllist *list) {");

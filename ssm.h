@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include "ir.h"
 
-typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR, SBSR, SSWPRR, SLINK, SUNLINK, STRAP, SBRF, SLDL, SSTL, SAJS, SADD, SSUB, SMUL, SDIV, SMOD, SAND, SOR, SXOR, S_EQ, SNE, SLT, SGT, SLE, SGE, SLDR, SSTA, SLDA, SSTMA, SLDRR, SLDC_LABEL } ssminstr;
+typedef enum { SNOP, SBRA, SRET, SHALT, SLDC, SSTR, SBSR, SSWPRR, SLINK, SUNLINK, STRAP, SBRF, SLDL, SSTL, SAJS, SADD, SSUB, SMUL, SDIV, SMOD, SAND, SOR, SXOR, S_EQ, SNE, SLT, SGT, SLE, SGE, SLDR, SSTA, SLDA, SSTMA, SLDRR } ssminstr;
 // XXX [2012-05-14 jille] Waarom zijn NONE en PC hardcoded?
 // "Registers 0, 1, 2 and 3 are called PC (program counter), SP (stack pointer), MP (mark pointer) and RR (return register) respectively."
 // [2012-05-19 jille] Zucht, ssm.jar vindt 0..7 PC, SP, MP, HP, RR, Rn

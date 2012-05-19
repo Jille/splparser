@@ -268,6 +268,11 @@ DESCEND_FUNC(simple_seq) {
 
 DESCEND_FUNC(init) {
 	struct irunit *program = tc_descend(tg, t->fst_child, arg);
+	return mkirseq(mkirginit(tg->nglobals), program);
+}
+
+DESCEND_FUNC(init_code) {
+	struct irunit *program = tc_descend(tg, t->fst_child, arg);
 	struct tc_func *f = lookup_function(tg, "main");
 	struct type rtype;
 	rtype.type = T_INT;
@@ -833,7 +838,9 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(Decl, simple_seq);
 	SET_RULE_HANDLER(VarDecl+, simple_seq);
 	SET_RULE_HANDLER(FunDecl+, simple_seq);
-	SET_RULE_HANDLER(Functions, init);
+	SET_RULE_HANDLER(Functions, init_code);
+	SET_RULE_HANDLER(S, init);
+	SET_RULE_HANDLER(GlobalVars, simple_seq);
 
 	init_builtin_functions(&tg);
 

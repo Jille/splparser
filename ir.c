@@ -201,6 +201,9 @@ show_ir_tree(struct irunit *ir, int indent) {
 	case HALT:
 		printf("HALT");
 		break;
+	case GINIT:
+		printf("GINIT(%d)", ir->nglobals);
+		break;
 	default:
 		assert(0 && "Unknown irtype");
 	}
@@ -381,5 +384,11 @@ irstm *mkirtrap(int syscall, irexp *arg) {
 irstm *mkirhalt() {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = HALT;
+	return ret;
+}
+irstm *mkirginit(int globals) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = GINIT;
+	ret->nglobals = globals;
 	return ret;
 }
