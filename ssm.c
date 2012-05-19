@@ -228,8 +228,6 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			CONVERT_BINOP_TO_SSMLINE(GE);
 			case LSHIFT:
 			case RSHIFT:
-			case ARSHIFT:
-				assert(!"yet implemented");
 			default:
 				assert(!"reached");
 		}

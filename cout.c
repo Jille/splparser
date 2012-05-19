@@ -103,8 +103,6 @@ irexp_to_c(irexp *ir, splctype how) {
 				CONVERT_BINOP(LE, <=);
 				CONVERT_BINOP(LSHIFT, <<);
 				CONVERT_BINOP(RSHIFT, >>);
-				case ARSHIFT:
-					assert(!"yet implemented");
 				NO_DEFAULT;
 			}
 			irexp_to_c(ir->binop.right, optype);
