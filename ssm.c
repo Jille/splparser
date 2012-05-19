@@ -448,7 +448,7 @@ ir_to_ssm(struct irunit *ir) {
 void
 write_ssm(struct ssmline *ssm, FILE *fd) {
 	printf("         LDC %d ; Initialize the HP\n", 100); // XXX initalizen op het aantal globale variabelen + 2
-	printf("         LDC lbl%04d\n", heaplabel); // XXX initalizen op het aantal globale variabelen + 2
+	printf("         LDC lbl%04d\n", heaplabel);
 	puts("         ADD");
 	puts("         STR R7");
 	while(ssm != NULL) {
