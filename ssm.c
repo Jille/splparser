@@ -281,15 +281,16 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		}
 		struct ssmline *bsr = alloc_ssmline(SBSR);
 		bsr->arg1.labelval = get_ssmlabel_from_irfunc(ir->call.func);
-		bsr->next = ssm_move_data(reg, RR);
 		if(ret != NULL) {
 			assert(ssm_iterate_last(prev) == ssm_iterate_last(ret));
 			ssm_iterate_last(prev)->next = bsr;
 			struct ssmline *ajs = alloc_ssmline(SAJS);
 			ajs->arg1.intval = -nargs;
 			ssm_iterate_last(bsr)->next = ajs;
+			ajs->next = ssm_move_data(reg, RR);
 			return ret;
 		}
+		bsr->next = ssm_move_data(reg, RR);
 		return bsr;
 	case LISTEL: {
 		/*
