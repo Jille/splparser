@@ -303,29 +303,30 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			ADD
 			STR R7
 		*/
-		struct ssmline *ret[7];
+		struct ssmline *ret[8];
 		ret[0] = alloc_ssmline(SLDR);
 		ret[0]->arg1.regval = R7;
 		ret[1] = alloc_ssmline(SSTMA);
 		ret[1]->arg1.intval = 0;
 		ret[1]->arg2.intval = 2;
-		ret[2] = alloc_ssmline(SLDR);
-		ret[2]->arg1.regval = R7;
-		ret[3] = alloc_ssmline(SLDC);
-		ret[3]->arg1.intval = 2;
-		ret[4] = alloc_ssmline(SADD);
-		ret[5] = alloc_ssmline(SSTR);
-		ret[5]->arg1.regval = R7;
-		ret[6] = NULL;
+		ret[2] = ssm_move_data(reg, R7);
+		if(ret[2] == NULL) {
+			// Dit is niet heel mooi, maar chain_ssmlines kan (nog?) niet overweg met NULL-values ertussen
+			ret[2] = alloc_ssmline(SNOP);
+			ret[2]->comment = "resultaat is niet nodig.";
+		}
+		ret[3] = alloc_ssmline(SLDR);
+		ret[3]->arg1.regval = R7;
+		ret[4] = alloc_ssmline(SLDC);
+		ret[4]->arg1.intval = 2;
+		ret[5] = alloc_ssmline(SADD);
+		ret[6] = alloc_ssmline(SSTR);
+		ret[6]->arg1.regval = R7;
+		ret[7] = NULL;
 		struct ssmline *exp = ir_exp_to_ssm(ir->listel.exp, STACK);
 		struct ssmline *next = ir_exp_to_ssm(ir->listel.next, STACK);
-		struct ssmline *cp = ssm_move_data(reg, R7);
 		ssm_iterate_last(exp)->next = next;
 		ssm_iterate_last(next)->next = chain_ssmlines(ret);
-		if(cp) {
-			cp->next = exp;
-			return cp;
-		}
 		return exp;
 	}
 	case ESEQ:
