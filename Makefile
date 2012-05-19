@@ -1,8 +1,8 @@
 CFLAGS=	-Wall -Wno-unused-function -g
 LDFLAGS=	-lpthread -g
 
-parser: parser.o scanner.o input.o generator.o lazyarray.o grammar.o types.o ir.o ssm.o builtins.o
-	$(CC) -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o lazyarray.o grammar.o types.o ir.o ssm.o builtins.o
+parser: parser.o scanner.o input.o generator.o lazyarray.o grammar.o types.o ir.o ssm.o builtins.o cout.o
+	$(CC) -o parser $(CFLAGS) $(LDFLAGS) parser.o scanner.o input.o generator.o lazyarray.o grammar.o types.o ir.o ssm.o builtins.o cout.o
 
 scanner: scanner.o input.o generator.o grammar.o
 	$(CC) -o scanner $(CFLAGS) $(LDFLAGS) scanner.c input.o generator.o grammar.o -DSTANDALONE
@@ -36,6 +36,9 @@ ssm.o: ssm.c ssm.h Makefile
 
 builtins.o: builtins.c ssm.h ir.h Makefile
 	$(CC) -c $(CFLAGS) builtins.c
+
+cout.o: cout.c ir.h Makefile
+	$(CC) -c $(CFLAGS) cout.c
 
 clean:
 	rm -f parser *.o tokens.h
