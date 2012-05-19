@@ -307,6 +307,14 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			ADD
 			STR HP
 		*/
+		struct ssmline *exp, *next; // ookwel *fst en *snd, bij TUPLE's
+		if(ir->type == LISTEL) {
+			exp = ir_exp_to_ssm(ir->listel.exp, STACK);
+			next = ir_exp_to_ssm(ir->listel.next, STACK);
+		} else {
+			exp = ir_exp_to_ssm(ir->tuple.fst, STACK);
+			next = ir_exp_to_ssm(ir->tuple.snd, STACK);
+		}
 		struct ssmline *ret[8];
 		ret[0] = alloc_ssmline(SLDR);
 		ret[0]->arg1.regval = HP;
@@ -327,14 +335,6 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		ret[6] = alloc_ssmline(SSTR);
 		ret[6]->arg1.regval = HP;
 		ret[7] = NULL;
-		struct ssmline *exp, *next; // ookwel *fst en *snd, bij TUPLE's
-		if(ir->type == LISTEL) {
-			exp = ir_exp_to_ssm(ir->listel.exp, STACK);
-			next = ir_exp_to_ssm(ir->listel.next, STACK);
-		} else {
-			exp = ir_exp_to_ssm(ir->tuple.fst, STACK);
-			next = ir_exp_to_ssm(ir->tuple.snd, STACK);
-		}
 		ssm_iterate_last(exp)->next = next;
 		ssm_iterate_last(next)->next = chain_ssmlines(ret);
 		return exp;
