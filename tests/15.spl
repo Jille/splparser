@@ -1,6 +1,6 @@
 [t]
 f(t a) {
-	return [];
+	return a : [];
 }
 
 Void
@@ -8,8 +8,12 @@ ctassert([Bool] l) {
 	return;
 }
 
-Void
+Int
 main() {
 	[Bool] a = f(True);
 	ctassert(a);
+	if(head(a)) {
+		return 0;
+	}
+	return 1;
 }
