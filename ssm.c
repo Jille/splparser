@@ -524,8 +524,10 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		printf("\n");
 		ssm = ssm->next;
 	}
-	printf("lbl%04d: NOP ; Builtin function head()\n", get_ssmlabel_from_irfunc(builtin_head));
-	// XXX implementeren
+	printf("lbl%04d: LDS -1 ; Builtin function head()\n", get_ssmlabel_from_irfunc(builtin_head));
+	printf("         LDA 0\n");
+	printf("         STR RR\n");
+	printf("         RET\n");
 	printf("lbl%04d: NOP ; Begin of the heap\n", 0);
 }
 
