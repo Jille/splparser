@@ -24,7 +24,7 @@ static ssmlabel ssmlabelptr = 0;
 static ssmlabel heaplabel = 0;
 static int args_for_current_function = -1;
 
-extern irfunc builtin_head, builtin_tail;
+extern irfunc builtin_head, builtin_tail, builtin_isempty;
 
 static struct ssmline *
 alloc_ssmline(ssminstr instr) {
@@ -534,6 +534,12 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 	printf("         RET\n");
 	printf("lbl%04d: LDS -1 ; Builtin function tail()\n", get_ssmlabel_from_irfunc(builtin_tail));
 	printf("         LDA 1\n");
+	printf("         STR RR\n");
+	printf("         RET\n");
+	printf("lbl%04d: LDS -1 ; Builtin function isempty()\n", get_ssmlabel_from_irfunc(builtin_isempty));
+	printf("         LDA 1\n");
+	printf("         LDC 0\n");
+	printf("         NE\n");
 	printf("         STR RR\n");
 	printf("         RET\n");
 	printf("lbl%04d: NOP ; Begin of the heap\n", 0);

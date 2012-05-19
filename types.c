@@ -74,7 +74,7 @@ typedef struct irunit *(*descend_ft)(DESCEND_ARGS);
 
 descend_ft *rule_handlers;
 
-irfunc builtin_head, builtin_tail;
+irfunc builtin_head, builtin_tail, builtin_isempty;
 
 void
 show_type(int indent, struct type *t)
@@ -913,6 +913,30 @@ init_builtin_functions(struct tc_globals *tg) {
 	builtin_tail = tail->func;
 	*tg->funcs_last = tail;
 	tg->funcs_last = &tail->next;
+
+	struct tc_func *isempty = calloc(1, sizeof(struct tc_func));
+	isempty->returntype = malloc(sizeof(struct type));
+	isempty->returntype->type = T_BOOL;
+	isempty->name = "isempty";
+	isempty->args = malloc(sizeof(struct func_arg));
+	isempty->args->name = "list";
+	isempty->args->type = malloc(sizeof(struct type));
+	isempty->args->type->type = '[';
+	isempty->args->type->list_type = malloc(sizeof(struct type));
+	isempty->args->type->list_type->type = T_WORD;
+	isempty->args->type->list_type->pm_name = "t";
+	isempty->args->type->list_type->accept_empty_list = 0; // ?
+	isempty->args->farg = 0;
+	isempty->args->next = NULL;
+	isempty->decls = NULL;
+	isempty->func = getfunc();
+	isempty->nargs = 1;
+	isempty->nlocals = 0;
+	isempty->next = NULL;
+
+	builtin_isempty = isempty->func;
+	*tg->funcs_last = isempty;
+	tg->funcs_last = &isempty->next;
 }
 
 struct irunit *
