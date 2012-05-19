@@ -280,7 +280,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 			nargs++;
 		}
 		struct ssmline *bsr = alloc_ssmline(SBSR);
-		bsr->arg1.labelval = ir->call.func;
+		bsr->arg1.labelval = get_ssmlabel_from_irfunc(ir->call.func);
 		bsr->next = ssm_move_data(reg, RR);
 		if(ret != NULL) {
 			assert(ssm_iterate_last(prev) == ssm_iterate_last(ret));
@@ -522,7 +522,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		printf("\n");
 		ssm = ssm->next;
 	}
-	printf("lbl%04d: NOP ; Builtin function head()\n", get_ssmlabel_from_irlabel(builtin_head));
+	printf("lbl%04d: NOP ; Builtin function head()\n", get_ssmlabel_from_irfunc(builtin_head));
 	// XXX implementeren
 	printf("lbl%04d: NOP ; Begin of the heap\n", 0);
 }
