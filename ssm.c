@@ -143,7 +143,6 @@ ssm_move_data(ssmregister dst, ssmregister src) {
 				ajs->comment = "Move data from STACK to NONE";
 				return ajs;
 			}
-			// [2012-08-14 jille] Is STR hier de goede instructie voor?
 			struct ssmline *str = alloc_ssmline(SSTR);
 			str->arg1.regval = dst;
 			return str;
