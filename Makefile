@@ -44,7 +44,7 @@ separate.o: separate.c Makefile
 	$(CC) -c $(CFLAGS) separate.c
 
 clean:
-	rm -f parser *.o tokens.h
+	rm -f parser *.o tokens.h *.ast
 
 tokens.h: gen-tokens.sh
 	sh gen-tokens.sh
