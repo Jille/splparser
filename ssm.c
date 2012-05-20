@@ -247,7 +247,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		struct ssmline *ret = alloc_ssmline(SLDR);
 		ret->arg1.regval = R5;
 		ret->next = alloc_ssmline(SLDA);
-		ret->next->arg1.intval = ir->global + 2;
+		ret->next->arg1.intval = ir->global;
 		ret->next->next = ssm_move_data(reg, STACK);
 		asprintf(&ret->comment, "Fetch global %d", ir->global);
 		return ret;
@@ -381,7 +381,7 @@ ir_to_ssm(struct irunit *ir) {
 				ret = alloc_ssmline(SLDR);
 				ret->arg1.regval = R5;
 				ret->next = alloc_ssmline(SSTA);
-				ret->next->arg1.intval = ir->move.dst->global + 2;
+				ret->next->arg1.intval = ir->move.dst->global;
 				asprintf(&ret->comment, "Store in global %d", ir->move.dst->global);
 				ssm_iterate_last(exp)->next = ret;
 				break;
