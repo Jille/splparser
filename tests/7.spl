@@ -1,0 +1,4 @@
+Int
+main() {
+	return 40 / 4 / 2;
+}
