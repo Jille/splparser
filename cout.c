@@ -67,22 +67,39 @@ irexp_to_c(irexp *ir, splctype how) {
 			printf("%d", ir->value);
 			break;
 		case BINOP: ;
-			splctype optype;
+			splctype ltype = C_VOID, rtype = C_VOID, otype;
+			// C_VOID means it will inherit the otype.
 			switch(ir->binop.op) {
 				case EQ:
 				case NE:
 				case AND:
+					otype = C_BOOL;
+					ltype = rtype = C_RAW;
+					break;
 				case OR:
 				case XOR:
-					optype = C_BOOL;
+					otype = C_BOOL;
+					break;
+				case LT:
+				case GT:
+				case GE:
+				case LE:
+					otype = C_BOOL;
+					ltype = rtype = C_INT;
 					break;
 				default:
-					optype = C_INT;
+					otype = C_INT;
 			}
-			if(optype != how) {
-				return convert_splctype(ir, how, optype);
+			if(otype != how) {
+				return convert_splctype(ir, how, otype);
 			}
-			irexp_to_c(ir->binop.left, optype);
+			if(ltype == C_VOID) {
+				ltype = otype;
+			}
+			if(rtype == C_VOID) {
+				rtype = otype;
+			}
+			irexp_to_c(ir->binop.left, ltype);
 			switch(ir->binop.op) {
 #define CONVERT_BINOP(x, y)	case x: printf(#y); break
 				CONVERT_BINOP(PLUS, +);
@@ -103,7 +120,7 @@ irexp_to_c(irexp *ir, splctype how) {
 				CONVERT_BINOP(RSHIFT, >>);
 				NO_DEFAULT;
 			}
-			irexp_to_c(ir->binop.right, optype);
+			irexp_to_c(ir->binop.right, rtype);
 			break;
 		case LOCAL:
 			if(how != C_UNION) {
@@ -165,13 +182,16 @@ irexp_to_c(irexp *ir, splctype how) {
 
 void
 irstm_to_c(irstm *ir, int prototype) {
+tail_recurse:
 	if(prototype && ir->type != SEQ && ir->type != FUNC && ir->type != GINIT) {
 		return;
 	}
 	switch(ir->type) {
 		case SEQ:
 			irstm_to_c(ir->seq.left, prototype);
-			irstm_to_c(ir->seq.right, prototype);
+			// irstm_to_c(ir->seq.right, prototype);
+			ir = ir->seq.right;
+			goto tail_recurse;
 			break;
 		case MOVE:
 			printf("\t");
@@ -316,7 +336,7 @@ ir_to_c(irstm *ir) {
 	puts("struct _spltuple;");
 	puts("typedef union _spltype {");
 	puts("	int ival;");
-	puts("	char bval;");
+	puts("	int bval;");
 	puts("	struct _spllist *lval;");
 	puts("	struct _spltuple *tval;");
 	puts("} spltype;");
