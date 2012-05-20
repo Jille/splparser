@@ -138,7 +138,7 @@ irexp_to_c(irexp *ir, splctype how) {
 			if(how != C_UNION) {
 				return convert_splctype(ir, how, C_UNION);
 			}
-			printf("a%d", ir->farg - 1); // Bah, ze beginnen bij 1 te tellen. My bad
+			printf("a%d", ir->farg);
 			break;
 		case CALL:
 			if(how != C_UNION) {
