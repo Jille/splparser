@@ -107,9 +107,7 @@ show_grammar(grammar *g) {
 	int i;
 	for(i = 0; g->lastrule >= i; i++) {
 		if(g->rules[i].branches[0] == NULL) {
-#ifdef VERBOSE_GRAMMAR_DEBUG
-			printf("Rule %s (#%d) not defined\n", g->rules[i].name, i);
-#endif
+			fprintf(stderr, "Rule %s (#%d) not defined\n", g->rules[i].name, i);
 			continue;
 		}
 #ifdef VERBOSE_GRAMMAR_DEBUG

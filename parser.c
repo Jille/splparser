@@ -114,7 +114,7 @@ parse_input_files(grammar *gram, char **args) {
 			lazyarray *g  = lazyarray_create(gen_tokens, *args, 1);
 			synt_error *e = create_synt_error();
 			if(!parser(g, gram, &t, e)) {
-				printf("Failed to parse %s, error on line %d: %s\n", *args, e->row, e->error);
+				fprintf(stderr, "Failed to parse %s, error on line %d: %s\n", *args, e->row, e->error);
 				exit(1);
 			}
 			lazyarray_destroy(g);
