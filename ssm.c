@@ -254,7 +254,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 	case FARG: {
 		struct ssmline *ret = alloc_ssmline(SLDL);
 		assert(args_for_current_function > 0);
-		ret->arg1.intval = -args_for_current_function + ir->farg - 2;
+		ret->arg1.intval = -args_for_current_function + ir->farg - 1;
 		ret->next = ssm_move_data(reg, STACK);
 		ret->comment = "fetch FARG";
 		asprintf(&ret->comment, "Fetch FARG %d", ir->farg);
@@ -386,7 +386,7 @@ ir_to_ssm(struct irunit *ir) {
 				break;
 			case FARG:
 				ret = alloc_ssmline(SSTL);
-				ret->arg1.intval = -args_for_current_function + ir->move.dst->farg - 2;
+				ret->arg1.intval = -args_for_current_function + ir->move.dst->farg - 1;
 				asprintf(&ret->comment, "Store in FARG %d", ir->move.dst->farg);
 				ssm_iterate_last(exp)->next = ret;
 				break;
