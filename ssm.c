@@ -27,7 +27,6 @@ struct ssmfuncmapping {
 static struct ssmlabelmapping *ssmlabels = NULL;
 static struct ssmfuncmapping *ssmfuncs = NULL;
 static ssmlabel ssmlabelptr = 0;
-static ssmlabel heaplabel = 0;
 static int args_for_current_function = -1;
 
 static struct ssmline *
@@ -580,7 +579,6 @@ write_ssm(struct ssmline *ssm, FILE *fh) {
 		ssm = ssm->next;
 	}
 	ssm_builtin_functions(fh);
-	fprintf(fh, "lbl%04d: NOP ; Begin of the heap\n", heaplabel);
 }
 
 void
