@@ -402,6 +402,9 @@ ir_to_ssm(struct irunit *ir) {
 		return res;
 	case CJUMP: { // jump to label as result of relop
 		irstm *tbody = ir->cjump.iftrue, *fbody = ir->cjump.iffalse;
+		if(tbody == NULL && fbody == NULL) {
+			return ir_exp_to_ssm(ir->exp, NONE);
+		}
 		exp = ir_exp_to_ssm(ir->cjump.cond, STACK);
 		struct ssmline *branch = alloc_ssmline(SBRF);
 		ssm_iterate_last(exp)->next = branch;
