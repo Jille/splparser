@@ -537,19 +537,7 @@ DESCEND_FUNC(if) {
 		iffalse = tc_descend(tg, chld, arg);
 	}
 
-	if(iftrue == NULL && iffalse == NULL) {
-		return mkirexp(cond);
-	}
-	irlabel elabel = getlabel();
-	if(iftrue != NULL && iffalse != NULL) {
-		irlabel flabel = getlabel();
-		return irconcat(mkircjump(cond, flabel), iftrue, mkirjump(elabel), mkirlabel(flabel), iffalse, mkirlabel(elabel), NULL);
-	}
-	if(iftrue == NULL) {
-		cond = mkirbinop(XOR, cond, mkirconst(1));
-		iftrue = iffalse;
-	}
-	return irconcat(mkircjump(cond, elabel), iftrue, mkirlabel(elabel), NULL);
+	return mkircjump(cond, iftrue, iffalse);
 }
 
 DESCEND_FUNC(while) {
@@ -557,7 +545,7 @@ DESCEND_FUNC(while) {
 	struct type booltype;
 	irexp *cond;
 	irstm *body;
-	irlabel start, done;
+	irlabel start;
 	synt_tree *chld = t->fst_child;
 
 	assert(chld->token->type == T_WHILE);
@@ -573,9 +561,8 @@ DESCEND_FUNC(while) {
 	body = tc_descend(tg, chld, arg);
 
 	start = getlabel();
-	done = getlabel();
 
-	return irconcat(mkirlabel(start), mkircjump(cond, done), mkirseq_opt(body, mkirjump(start)), mkirlabel(done), NULL);
+	return mkirseq(mkirlabel(start), mkircjump(cond, mkirseq(body, mkirjump(start)), NULL));
 }
 
 DESCEND_FUNC(assignment) {
