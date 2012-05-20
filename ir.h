@@ -55,8 +55,9 @@ struct irunit {
 			irexp *exp;
 			irlabel jump;
 			struct {
-				irexp *exp;
-				irlabel iffalse;
+				irexp *cond;
+				irstm *iftrue;
+				irstm *iffalse;
 			} cjump;
 			struct {
 				irstm *left;
@@ -102,7 +103,7 @@ irexp *mkirlistel(irexp *exp, irexp *next);
 irexp *mkirtuple(irexp *fst, irexp *snd);
 irstm *mkirexp(irexp *exp);
 irstm *mkirjump(irlabel label);
-irstm *mkircjump(irexp *exp, irlabel f);
+irstm *mkircjump(irexp *cond, irstm *iftrue, irstm *iffalse);
 irstm *mkirlabel(irlabel label);
 irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nargs, int nvars);

@@ -400,12 +400,38 @@ ir_to_ssm(struct irunit *ir) {
 		res = alloc_ssmline(SBRA);
 		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->jump);
 		return res;
-	case CJUMP: // jump to label as result of relop
-		res = alloc_ssmline(SBRF);
-		res->arg1.labelval = get_ssmlabel_from_irlabel(ir->cjump.iffalse);
-		exp = ir_exp_to_ssm(ir->cjump.exp, STACK);
-		ssm_iterate_last(exp)->next = res;
+	case CJUMP: { // jump to label as result of relop
+		irstm *tbody = ir->cjump.iftrue, *fbody = ir->cjump.iffalse;
+		exp = ir_exp_to_ssm(ir->cjump.cond, STACK);
+		struct ssmline *branch = alloc_ssmline(SBRF);
+		ssm_iterate_last(exp)->next = branch;
+		if(tbody == NULL) {
+			branch->instr = SBRT;
+			tbody = fbody;
+			fbody = NULL;
+		}
+		branch->arg1.labelval = ++ssmlabelptr;
+		branch->comment = "if";
+		branch->next = ir_to_ssm(tbody);
+		struct ssmline *false = alloc_ssmline(SNOP);
+		false->label = branch->arg1.labelval;
+		if(fbody == NULL) {
+			false->comment = "endif";
+			ssm_iterate_last(branch)->next = false;
+		} else {
+			struct ssmline *jump = alloc_ssmline(SBRA);
+			jump->arg1.labelval = ++ssmlabelptr;
+			jump->next = false;
+			jump->comment = "else";
+			ssm_iterate_last(branch)->next = jump;
+			false->next = ir_to_ssm(fbody);
+			struct ssmline *true = alloc_ssmline(SNOP);
+			true->label = jump->arg1.labelval;
+			true->comment = "endif";
+			ssm_iterate_last(false)->next = true;
+		}
 		return exp;
+	}
 	case SEQ: // Statement "left" followed by "right"
 		// Unless "left" is a label or function declaration, in which
 		// case it simply sets the label of "right"
@@ -517,6 +543,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_LABEL(BRA);
 		INSTR_LABEL(BSR);
 		INSTR_LABEL(BRF);
+		INSTR_LABEL(BRT);
 
 		// register parameter
 #define INSTR_REG(instr)	case S ## instr: printf(#instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
