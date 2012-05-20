@@ -1,4 +1,4 @@
 Int
-main(Int argc) {
-	return argc;
+main() {
+	return 40 / 4 / 2;
 }
