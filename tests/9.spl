@@ -1,5 +1,6 @@
 Int
-main(Int argc) {
+main() {
+	Int argc = random();
 	if(True)
 		argc = argc + 1;
 	return argc;

@@ -1,4 +1,8 @@
 Int
-main(Int argc, [Int] argv) {
-	return True;
+main() {
+	if(True) {
+	}
+	else
+		return 1;
+	return 0;
 }

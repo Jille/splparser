@@ -1,5 +1,5 @@
 Int
-main(Int argc, [Int] argv) {
-	Int foo = True;
+main() {
+	Int foo = 1+2;
 	return foo;
 }

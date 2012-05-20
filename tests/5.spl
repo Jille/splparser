@@ -1,30 +1,17 @@
-Bool
-isempty([Int] list) {
-	return True;
-}
-
-[Int]
-tail([Int] list) {
-	return [];
-}
-
-Int
-head([Int] list) {
-	return 0;
-}
-
-[Int]
-foo(Int number, Int amnt) {
-	[Int] list = [];
+[t]
+foo(t item, Int amnt) {
+	[t] list = [];
 	while(amnt > 0) {
-		list = number : list;
+		list = item : list;
 		amnt = amnt - 1;
 	}
 	return list;
 }
 
 Int
-main(Int argc, [Int] argv) {
+main() {
+	Int argc = 0;
+	[Int] argv = [];
 	Int number = 5;
 	[Int] list = [];
 	if(argc > 0) {

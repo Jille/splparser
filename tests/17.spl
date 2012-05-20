@@ -5,3 +5,9 @@ f(t x, u y) {
 	tmp = y : tmp;
 	return (tmp, (y, z));
 }
+
+Int
+main() {
+	([Int], (Int, [[Bool]])) x = f(True, 5);
+	return 0;
+}

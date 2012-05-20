@@ -1,7 +1,7 @@
 Int foo = 0;
 
 Int
-main(Int argc, [Int] argv) {
+main() {
 	foo = 1;
 	return foo;
 }

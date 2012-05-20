@@ -1,5 +1,7 @@
+Int foo = 3;
+
 Int
 main() {
-	Int bar = bar+1;
+	Int bar = foo + 1;
 	return bar;
 }

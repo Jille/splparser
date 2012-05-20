@@ -1,4 +1,4 @@
 Int
-main(Int argc, [Int] argv) {
+main() {
 	return 0;
 }

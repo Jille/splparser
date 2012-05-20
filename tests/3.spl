@@ -1,5 +1,5 @@
 Int
-main(Int argc, [Int] argv) {
+main() {
 	Bool foo = True;
 	Int res = 0;
 	if(foo) {

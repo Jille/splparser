@@ -1,5 +1,5 @@
 Int
-main(Int argc) {
+main() {
 	Int foo = 5;
 	Int bar = foo + 1;
 	return foo + bar;

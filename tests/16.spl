@@ -2,7 +2,7 @@
 f(t x, u y) {
 	[[t]] z = [];
 	[t] tmp = [];
-	tmp = y : tmp;
+	tmp = x : tmp;
 	z = tmp : z;
 	return ([], (y, z));
 }

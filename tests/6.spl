@@ -4,23 +4,14 @@ putchar(Int x) {
 }
 
 Int
-head([Int] list) {
-	return 5;
-}
-
-[Int]
-tail([Int] list) {
-	return list;
-}
-
-Void
-main(Int argc, [Int] argv) {
+main() {
+	Int argc = 3;
 	Int i = 0;
-	[Int] rest = argv;
+	[Int] rest = 1 : 2 : 3 : 4 : [];
 	while(argc > i) {
-		putchar(head(argv));
-		rest = tail(argv);
+		putchar(head(rest));
+		rest = tail(rest);
 		i = i+1;
 	}
-	return;
+	return i;
 }

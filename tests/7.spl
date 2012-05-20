@@ -1,4 +1,0 @@
-Int
-main(Int argc) {
-	return argc;
-}

@@ -1,10 +1,10 @@
 [(t, ([u], u))]
 f(t a, u b) {
-	return [];
+	return (a, (b : [], b)) : [];
 }
 
-Void
+Int
 main() {
 	[(Int, ([Bool], Bool))] x = f(5, True);
-	return;
+	return fst(head(x));
 }

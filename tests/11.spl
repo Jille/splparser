@@ -1,9 +1,11 @@
 [t]
-tail([t] list) {
+bla([t] list) {
 	return list;
 }
 
-Void
-main(Int argc, [Int] argv) {
-	argv = tail(argv);
+Int
+main() {
+	[Int] l = 1 : 2 : [];
+	l = bla(l);
+	return head(l);
 }

@@ -3,8 +3,8 @@ f(t a, u b) {
 	return (a, b);
 }
 
-Void
+Int
 main() {
 	(Int, Bool) x = f(5, True);
-	return;
+	return fst(x);
 }
