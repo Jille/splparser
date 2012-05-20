@@ -413,7 +413,7 @@ DESCEND_FUNC(fargs) {
 	struct func_arg *fa = malloc(sizeof(struct vardecl));
 	synt_tree *chld = t->fst_child;
 
-	fa->farg = ++fdata->nargs;
+	fa->farg = fdata->nargs++;
 	fa->next = NULL;
 	tc_descend(tg, chld, &fa->type);
 	chld = chld->next;
