@@ -16,7 +16,7 @@
 
 static void convert_splctype(irexp *ir, splctype to, splctype from);
 static void irexp_to_c(irexp *ir, splctype how);
-static void irstm_to_c(irstm *ir, int prototype);
+static void irstm_to_c(irstm *ir, int prototype, int indent);
 
 static void
 convert_splctype(irexp *ir, splctype to, splctype from) {
@@ -181,50 +181,72 @@ irexp_to_c(irexp *ir, splctype how) {
 }
 
 void
-irstm_to_c(irstm *ir, int prototype) {
+irstm_to_c(irstm *ir, int prototype, int indent) {
 tail_recurse:
 	if(prototype && ir->type != SEQ && ir->type != FUNC && ir->type != EXTFUNC && ir->type != GINIT) {
 		return;
 	}
 	switch(ir->type) {
 		case SEQ:
-			irstm_to_c(ir->seq.left, prototype);
-			// irstm_to_c(ir->seq.right, prototype);
+			irstm_to_c(ir->seq.left, prototype, indent);
+			// irstm_to_c(ir->seq.right, prototype, indent);
 			ir = ir->seq.right;
 			goto tail_recurse;
 			break;
 		case MOVE:
-			printf("\t");
+			print_indent(indent);
 			irexp_to_c(ir->move.dst, C_RAW);
 			printf(" = ");
 			irexp_to_c(ir->move.src, C_UNION);
 			puts(";");
 			break;
 		case EXP:
-			printf("\t");
+			print_indent(indent);
 			irexp_to_c(ir->exp, C_RAW);
 			puts(";");
 			break;
 		case JUMP:
-			printf("\tgoto lbl%04d;\n", get_ssmlabel_from_irlabel(ir->jump));
+			print_indent(indent);
+			printf("goto lbl%04d;\n", get_ssmlabel_from_irlabel(ir->jump));
 			break;
-		case CJUMP:
-			printf("\tif(!");
-			irexp_to_c(ir->cjump.exp, C_BOOL);
-			printf(")\n\t\tgoto lbl%04d;\n", get_ssmlabel_from_irlabel(ir->cjump.iffalse));
+		case CJUMP: {
+			irstm *tbody = ir->cjump.iftrue, *fbody = ir->cjump.iffalse;
+			print_indent(indent);
+			if(tbody == NULL && fbody == NULL) {
+				return irexp_to_c(ir->cjump.cond, C_RAW);
+			}
+			printf("if(");
+			if(tbody == NULL) {
+				printf("!");
+				tbody = fbody;
+				fbody = NULL;
+			}
+			irexp_to_c(ir->cjump.cond, C_BOOL);
+			puts(") {");
+			irstm_to_c(tbody, prototype, indent+1);
+			if(fbody != NULL) {
+				print_indent(indent);
+				puts("} else {");
+				irstm_to_c(fbody, prototype, indent+1);
+			}
+			print_indent(indent);
+			puts("}");
 			break;
+		}
 		case LABEL:
 			printf("lbl%04d: \n", get_ssmlabel_from_irlabel(ir->label));
 			break;
 		case RET:
-			printf("\treturn ");
+			print_indent(indent);
+			printf("return ");
 			irexp_to_c(ir->ret, C_UNION);
 			puts(";");
 			break;
 		case TRAP:
+			print_indent(indent);
 			switch(ir->trap.syscall) {
 				case 0:
-					printf("\tprintf(\"%%d\\n\", ");
+					printf("printf(\"%%d\\n\", ");
 					irexp_to_c(ir->trap.arg, C_INT);
 					puts(");");
 					break;
@@ -232,12 +254,15 @@ tail_recurse:
 			}
 			break;
 		case HALT:
-			puts("\texit(0);");
+			print_indent(indent);
+			puts("exit(0);");
 			break;
 		case FUNC:
 			if(!prototype) {
+				print_indent(indent-1);
 				puts("}\n");
 			}
+			print_indent(indent-1);
 			printf("spltype f%d(", ir->func.funcid);
 			if(ir->func.args > 0) {
 				printf("spltype a0");
@@ -251,7 +276,8 @@ tail_recurse:
 			} else {
 				puts(") {");
 				if(ir->func.vars > 0) {
-					printf("\tspltype l0");
+					print_indent(indent);
+					printf("spltype l0");
 					int i;
 					for(i = 1; ir->func.vars > i; i++) {
 						printf(", l%d", i);
@@ -262,8 +288,10 @@ tail_recurse:
 			break;
 		case EXTFUNC:
 			if(!prototype) {
+				print_indent(indent-1);
 				puts("}\n");
 			}
+			print_indent(indent-1);
 			printf("spltype f%d(", ir->extfunc.funcid);
 			if(ir->extfunc.nargs > 0) {
 				printf("spltype a0");
@@ -276,7 +304,7 @@ tail_recurse:
 				puts(");");
 			} else {
 				puts(") {");
-				printf("\t");
+				print_indent(indent);
 				if(ir->extfunc.returntype != C_VOID) {
 					printf("return ");
 					if(ir->extfunc.returntype != C_UNION) {
@@ -310,12 +338,14 @@ tail_recurse:
 				}
 				puts(");");
 				if(ir->extfunc.returntype == C_VOID) {
-					puts("\treturn (spltype)0;");
+					print_indent(indent);
+					puts("return (spltype)0;");
 				}
 			}
 			break;
 		case GINIT:
 			if(prototype && ir->nglobals > 0) {
+				print_indent(indent);
 				printf("spltype g0");
 				int i;
 				for(i = 1; ir->nglobals > i; i++) {
@@ -349,7 +379,7 @@ ir_to_c(irstm *ir) {
 	puts("	spltype snd;");
 	puts("} spltuple;");
 	puts("");
-	irstm_to_c(ir, 1);
+	irstm_to_c(ir, 1, 0);
 	puts("");
 	puts("spltype create_listel(spltype el, spllist *list) {");
 	puts("	spltype ret;");
@@ -369,6 +399,6 @@ ir_to_c(irstm *ir) {
 	c_builtin_functions();
 	puts("");
 	puts("int main(int argc, char **argv) {");
-	irstm_to_c(ir, 0);
+	irstm_to_c(ir, 0, 1);
 	puts("}");
 }
