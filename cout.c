@@ -183,7 +183,7 @@ irexp_to_c(irexp *ir, splctype how) {
 void
 irstm_to_c(irstm *ir, int prototype) {
 tail_recurse:
-	if(prototype && ir->type != SEQ && ir->type != FUNC && ir->type != GINIT) {
+	if(prototype && ir->type != SEQ && ir->type != FUNC && ir->type != EXTFUNC && ir->type != GINIT) {
 		return;
 	}
 	switch(ir->type) {
