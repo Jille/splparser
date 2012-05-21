@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <errno.h>
 #include "lazyarray.h"
 #include "scanner.h"
 #include "prototypes.h"
@@ -19,12 +21,73 @@ int ruleparser(lazyarray *gen, grammar *gram, struct attempt *a, synt_error *e);
 
 struct attempt *att_head;
 
+void
+usage(char *exec) {
+	fprintf(stderr, "Usage: %s [opts] [infile]\n", exec);
+	fprintf(stderr, "If no infile is given, 'in.spl' is used.\n");
+	fprintf(stderr, "Available options:\n");
+	fprintf(stderr, "  -o outfile    - Write to outfile (default is out.ssm)\n");
+	fprintf(stderr, "  -out outfile  - Alias for -o\n");
+	fprintf(stderr, "  -noout        - Don't write to any outfile (overrides -o)\n");
+	fprintf(stderr, "  -sSYNT        - Write abstract syntax tree to stdout after generation\n");
+	fprintf(stderr, "  -sIR          - Write intermediate representation tree to stdout after generation\n");
+	fprintf(stderr, "  -sSSM         - Write SSM to stdout after generation\n");
+}
+
 int
 main(int argc, char **argv) {
-	char *file = "test.spl";
-	if(argc == 2) {
-		file = argv[1];
+	// Parse command-line options
+	int showsynt = 0, showir = 0, showssm = 0, next_out = 0, fileset = 0;
+	char *file = "in.spl";
+	char *outfile = "out.ssm";
+	int argi;
+
+	for(argi = 1; argi < argc; ++argi) {
+		char *arg = argv[argi];
+		if(next_out == 1) {
+			next_out = 0;
+			// if -noout was not explicitly given earlier:
+			if(outfile != 0)
+				outfile = arg;
+			continue;
+		}
+		if(strcmp(arg, "-o") == 0 || strcmp(arg, "-out") == 0) {
+			next_out = 1;
+		} else if(strcmp(arg, "-noout") == 0) {
+			outfile = 0;
+		} else if(strcmp(arg, "-sSYNT") == 0) {
+			showsynt = 1;
+		} else if(strcmp(arg, "-sIR") == 0) {
+			showir = 1;
+		} else if(strcmp(arg, "-sSSM") == 0) {
+			showssm = 1;
+		} else if(strncmp(arg, "-", 1) == 0) {
+			fprintf(stderr, "Didn't understand parameter: %s\n", argv[argi]);
+			usage(argv[0]);
+			return 2;
+		} else {
+			if(fileset) {
+				fprintf(stderr, "Two output files given, this is illegal (was=%s, new=%s)\n", file, arg);
+				usage(argv[0]);
+				return 3;
+			}
+			fileset = 1;
+			file = arg;
+		}
 	}
+
+	if(next_out) {
+		fprintf(stderr, "-o needs an argument, the output file\n");
+		usage(argv[0]);
+		return 4;
+	}
+
+	struct stat res;
+	if(stat(file, &res) < 0) {
+		fprintf(stderr, "Could not open input file %s: %s\n", file, strerror(errno));
+		return 5;
+	}
+
 	lazyarray *g  = lazyarray_create(gen_tokens, file, 1);
 	// XXX load the grammar in another thread
 	grammar *gram = parse_grammar("grammar.g");
@@ -32,19 +95,37 @@ main(int argc, char **argv) {
 	synt_error *e = create_synt_error();
 	synt_tree *t;
 	if(!parser(g, gram, &t, e)) {
-		printf("Failed to parse, error on line %d: %s\n", e->row, e->error);
+		fprintf(stderr, "Failed to parse, error on line %d: %s\n", e->row, e->error);
 		return 1;
 	}
 
-	printf("Syntax tree:\n");
-	show_synt_tree(t, 0, gram);
+	if(showsynt) {
+		fprintf(stderr, "Syntax tree:\n");
+		show_synt_tree(t, 0, gram);
+	}
 
 	struct irunit *ir = typechecker(t, gram);
-	show_ir_tree(ir, 0);
-	printf("\n");
+	if(showir) {
+		fprintf(stderr, "IR tree:\n");
+		show_ir_tree(ir, 0);
+		printf("\n");
+	}
 
 	struct ssmline *ssm = ir_to_ssm(ir);
-	show_ssm(ssm);
+	if(showssm) {
+		fprintf(stderr, "SSM:\n");
+		show_ssm(ssm);
+	}
+
+	if(outfile != 0) {
+		FILE *outh = fopen(outfile, "w");
+		if(outh == 0) {
+			fprintf(stderr, "Could not open output file %s: %s\n", outfile, strerror(errno));
+			return 6;
+		}
+		write_ssm(ssm, outh);
+		fclose(outh);
+	}
 
 	free(t);
 	lazyarray_destroy(g);
