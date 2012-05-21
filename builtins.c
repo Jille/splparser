@@ -152,27 +152,27 @@ init_builtin_functions(struct tc_globals *tg) {
 }
 
 void
-ssm_builtin_functions() {
-	printf("lbl%04d: LDS -1 ; Builtin function head()\n", get_ssmlabel_from_irfunc(builtin_head));
-	printf("         LDA 0\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
-	printf("lbl%04d: LDS -1 ; Builtin function tail()\n", get_ssmlabel_from_irfunc(builtin_tail));
-	printf("         LDA 1\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
-	printf("lbl%04d: LDS -1 ; Builtin function isempty()\n", get_ssmlabel_from_irfunc(builtin_isempty));
-	printf("         LDA 1\n");
-	printf("         LDC 0\n");
-	printf("         NE\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
-	printf("lbl%04d: LDS -1 ; Builtin function fst()\n", get_ssmlabel_from_irfunc(builtin_fst));
-	printf("         LDA 0\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
-	printf("lbl%04d: LDS -1 ; Builtin function snd()\n", get_ssmlabel_from_irfunc(builtin_snd));
-	printf("         LDA 1\n");
-	printf("         STR RR\n");
-	printf("         RET\n");
+ssm_builtin_functions(FILE *handle) {
+	fprintf(handle, "lbl%04d: LDS -1 ; Builtin function head()\n", get_ssmlabel_from_irfunc(builtin_head));
+	fprintf(handle, "         LDA 0\n");
+	fprintf(handle, "         STR RR\n");
+	fprintf(handle, "         RET\n");
+	fprintf(handle, "lbl%04d: LDS -1 ; Builtin function tail()\n", get_ssmlabel_from_irfunc(builtin_tail));
+	fprintf(handle, "         LDA 1\n");
+	fprintf(handle, "         STR RR\n");
+	fprintf(handle, "         RET\n");
+	fprintf(handle, "lbl%04d: LDS -1 ; Builtin function isempty()\n", get_ssmlabel_from_irfunc(builtin_isempty));
+	fprintf(handle, "         LDA 1\n");
+	fprintf(handle, "         LDC 0\n");
+	fprintf(handle, "         NE\n");
+	fprintf(handle, "         STR RR\n");
+	fprintf(handle, "         RET\n");
+	fprintf(handle, "lbl%04d: LDS -1 ; Builtin function fst()\n", get_ssmlabel_from_irfunc(builtin_fst));
+	fprintf(handle, "         LDA 0\n");
+	fprintf(handle, "         STR RR\n");
+	fprintf(handle, "         RET\n");
+	fprintf(handle, "lbl%04d: LDS -1 ; Builtin function snd()\n", get_ssmlabel_from_irfunc(builtin_snd));
+	fprintf(handle, "         LDA 1\n");
+	fprintf(handle, "         STR RR\n");
+	fprintf(handle, "         RET\n");
 }

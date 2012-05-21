@@ -502,14 +502,14 @@ void
 write_ssm(struct ssmline *ssm, FILE *fd) {
 	while(ssm != NULL) {
 		if(ssm->label == 0) {
-			printf("         ");
+			fprintf(fd, "         ");
 		} else {
-			printf("lbl%04d: ", ssm->label);
+			fprintf(fd, "lbl%04d: ", ssm->label);
 		}
 
 		switch(ssm->instr) {
 		// no parameters
-#define INSTR_VOID(instr)	case S ## instr: printf(#instr); break
+#define INSTR_VOID(instr)	case S ## instr: fprintf(fd, #instr); break
 		INSTR_VOID(NOP);
 		INSTR_VOID(HALT);
 		INSTR_VOID(RET);
@@ -522,7 +522,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_VOID(AND);
 		INSTR_VOID(OR);
 		INSTR_VOID(XOR);
-		case S_EQ:  printf("EQ"); break;
+		case S_EQ:  fprintf(fd, "EQ"); break;
 		INSTR_VOID(NE);
 		INSTR_VOID(LT);
 		INSTR_VOID(GT);
@@ -530,7 +530,7 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_VOID(GE);
 
 		// integer parameter
-#define INSTR_INT(instr)	case S ## instr: printf(#instr " %d", ssm->arg1.intval); break
+#define INSTR_INT(instr)	case S ## instr: fprintf(fd, #instr " %d", ssm->arg1.intval); break
 		INSTR_INT(LDC);
 		INSTR_INT(LINK);
 		INSTR_INT(TRAP);
@@ -541,23 +541,23 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		INSTR_INT(LDA);
 
 		// label parameter
-#define INSTR_LABEL(instr)	case S ## instr: printf(#instr " lbl%04d", ssm->arg1.labelval); break
+#define INSTR_LABEL(instr)	case S ## instr: fprintf(fd, #instr " lbl%04d", ssm->arg1.labelval); break
 		INSTR_LABEL(BRA);
 		INSTR_LABEL(BSR);
 		INSTR_LABEL(BRF);
 		INSTR_LABEL(BRT);
 
 		// register parameter
-#define INSTR_REG(instr)	case S ## instr: printf(#instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
+#define INSTR_REG(instr)	case S ## instr: fprintf(fd, #instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
 		INSTR_REG(STR);
 		INSTR_REG(LDR);
 
 		// integer parameter, integer parameter
-#define INSTR_INT_INT(instr)	case S ## instr: printf(#instr " %d %d", ssm->arg1.intval, ssm->arg2.intval); break
+#define INSTR_INT_INT(instr)	case S ## instr: fprintf(fd, #instr " %d %d", ssm->arg1.intval, ssm->arg2.intval); break
 		INSTR_INT_INT(STMA);
 
 		// register parameter, register parameter
-#define INSTR_REG_REG(instr)	case S ## instr: printf(#instr " %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break
+#define INSTR_REG_REG(instr)	case S ## instr: fprintf(fd, #instr " %s %s", ssm_register_to_string(ssm->arg1.regval), ssm_register_to_string(ssm->arg2.regval)); break
 		INSTR_REG_REG(SWPRR);
 		INSTR_REG_REG(LDRR);
 
@@ -567,13 +567,13 @@ write_ssm(struct ssmline *ssm, FILE *fd) {
 		}
 
 		if(ssm->comment) {
-			printf(" ; %s", ssm->comment);
+			fprintf(fd, " ; %s", ssm->comment);
 		}
 
-		printf("\n");
+		fprintf(fd, "\n");
 		ssm = ssm->next;
 	}
-	ssm_builtin_functions();
+	ssm_builtin_functions(fd);
 }
 
 void
