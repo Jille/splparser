@@ -145,6 +145,13 @@ _read_synt_tree(FILE *fh) {
 synt_tree *
 read_synt_tree(char *file) {
 	FILE *fh = fopen(file, "r");
+	if(fh == 0) {
+		char *error;
+		asprintf(&error, "Could not open syntax tree %s", file);
+		perror(error);
+		free(error);
+		return NULL;
+	}
 	synt_tree *t = _read_synt_tree(fh);
 	fclose(fh);
 	return t;
