@@ -14,27 +14,33 @@
 
 #define NO_DEFAULT default: assert(!"reached")
 
-static void convert_splctype(irexp *ir, splctype to, splctype from);
-static void irexp_to_c(irexp *ir, splctype how);
-static void irstm_to_c(irstm *ir, int prototype, int indent);
+static void convert_splctype(irexp *ir, splctype to, splctype from, FILE *fd);
+static void irexp_to_c(irexp *ir, splctype how, FILE *fd);
+static void irstm_to_c(irstm *ir, int prototype, int indent, FILE *fd);
+
+static int
+puts_fd(const char *s, FILE *fd) {
+	fputs(s, fd);
+	return fputs("\n", fd); // <-- WHY OH WHY, fputs?
+}
 
 static void
-convert_splctype(irexp *ir, splctype to, splctype from) {
+convert_splctype(irexp *ir, splctype to, splctype from, FILE *fd) {
 	assert(to != from);
 	if(from == C_UNION) {
-		irexp_to_c(ir, from);
+		irexp_to_c(ir, from, fd);
 		switch(to) {
 			case C_INT:
-				printf(".ival");
+				fprintf(fd, ".ival");
 				return;
 			case C_BOOL:
-				printf(".bval");
+				fprintf(fd, ".bval");
 				return;
 			case C_LIST:
-				printf(".lval");
+				fprintf(fd, ".lval");
 				return;
 			case C_TUPLE:
-				printf(".uval");
+				fprintf(fd, ".uval");
 				return;
 			case C_RAW:
 				return;
@@ -43,28 +49,29 @@ convert_splctype(irexp *ir, splctype to, splctype from) {
 	}
 	switch(to) {
 		case C_RAW:
-			return irexp_to_c(ir, from);
+			return irexp_to_c(ir, from, fd);
 		case C_UNION:
-			printf("(spltype)(");
-			irexp_to_c(ir, from);
-			printf(")");
+			fprintf(fd, "(spltype)(");
+			irexp_to_c(ir, from, fd);
+			fprintf(fd, ")");
 			break;
 		NO_DEFAULT;
 	}
 }
 
 static void
-irexp_to_c(irexp *ir, splctype how) {
+irexp_to_c(irexp *ir, splctype how, FILE *fd) {
 	switch(ir->type) {
 		case CONST:
 			if(how == C_LIST && ir->value == 0) {
-				printf("NULL");
+				fprintf(fd, "NULL");
 				return;
 			}
 			if(how != C_INT && how != C_BOOL) {
-				return convert_splctype(ir, how, C_INT);
+				convert_splctype(ir, how, C_INT, fd);
+				return;
 			}
-			printf("%d", ir->value);
+			fprintf(fd, "%d", ir->value);
 			break;
 		case BINOP: ;
 			splctype ltype = C_VOID, rtype = C_VOID, otype;
@@ -91,7 +98,7 @@ irexp_to_c(irexp *ir, splctype how) {
 					otype = C_INT;
 			}
 			if(otype != how) {
-				return convert_splctype(ir, how, otype);
+				return convert_splctype(ir, how, otype, fd);
 			}
 			if(ltype == C_VOID) {
 				ltype = otype;
@@ -99,9 +106,9 @@ irexp_to_c(irexp *ir, splctype how) {
 			if(rtype == C_VOID) {
 				rtype = otype;
 			}
-			irexp_to_c(ir->binop.left, ltype);
+			irexp_to_c(ir->binop.left, ltype, fd);
 			switch(ir->binop.op) {
-#define CONVERT_BINOP(x, y)	case x: printf(#y); break
+#define CONVERT_BINOP(x, y)	case x: fprintf(fd, #y); break
 				CONVERT_BINOP(PLUS, +);
 				CONVERT_BINOP(MINUS, -);
 				CONVERT_BINOP(EQ, ==);
@@ -120,238 +127,238 @@ irexp_to_c(irexp *ir, splctype how) {
 				CONVERT_BINOP(RSHIFT, >>);
 				NO_DEFAULT;
 			}
-			irexp_to_c(ir->binop.right, rtype);
+			irexp_to_c(ir->binop.right, rtype, fd);
 			break;
 		case LOCAL:
 			if(how != C_UNION) {
-				return convert_splctype(ir, how, C_UNION);
+				return convert_splctype(ir, how, C_UNION, fd);
 			}
-			printf("l%d", ir->local);
+			fprintf(fd, "l%d", ir->local);
 			break;
 		case GLOBAL:
 			if(how != C_UNION) {
-				return convert_splctype(ir, how, C_UNION);
+				return convert_splctype(ir, how, C_UNION, fd);
 			}
-			printf("g%d", ir->global);
+			fprintf(fd, "g%d", ir->global);
 			break;
 		case FARG:
 			if(how != C_UNION) {
-				return convert_splctype(ir, how, C_UNION);
+				return convert_splctype(ir, how, C_UNION, fd);
 			}
-			printf("a%d", ir->farg);
+			fprintf(fd, "a%d", ir->farg);
 			break;
 		case CALL:
 			if(how != C_UNION) {
-				return convert_splctype(ir, how, C_UNION);
+				return convert_splctype(ir, how, C_UNION, fd);
 			}
-			printf("f%d(", ir->call.func);
+			fprintf(fd, "f%d(", ir->call.func);
 			struct irexplist *args = ir->call.args;
 			while(args != NULL) {
-				irexp_to_c(args->exp, C_UNION);
+				irexp_to_c(args->exp, C_UNION, fd);
 				args = args->next;
 				if(args == NULL) {
 					break;
 				}
-				printf(", ");
+				fprintf(fd, ", ");
 			}
-			printf(")");
+			fprintf(fd, ")");
 			break;
 		case LISTEL:
 			if(how != C_UNION) {
-				return convert_splctype(ir, how, C_UNION);
+				return convert_splctype(ir, how, C_UNION, fd);
 			}
-			printf("create_listel(");
-			irexp_to_c(ir->listel.exp, C_UNION);
-			printf(", ");
-			irexp_to_c(ir->listel.next, C_LIST);
-			printf(")");
+			fprintf(fd, "create_listel(");
+			irexp_to_c(ir->listel.exp, C_UNION, fd);
+			fprintf(fd, ", ");
+			irexp_to_c(ir->listel.next, C_LIST, fd);
+			fprintf(fd, ")");
 			break;
 		case TUPLE:
 			if(how != C_UNION) {
-				return convert_splctype(ir, how, C_UNION);
+				return convert_splctype(ir, how, C_UNION, fd);
 			}
-			printf("create_tuple(");
-			irexp_to_c(ir->tuple.fst, C_UNION);
-			printf(", ");
-			irexp_to_c(ir->tuple.fst, C_UNION);
-			printf(")");
+			fprintf(fd, "create_tuple(");
+			irexp_to_c(ir->tuple.fst, C_UNION, fd);
+			fprintf(fd, ", ");
+			irexp_to_c(ir->tuple.fst, C_UNION, fd);
+			fprintf(fd, ")");
 			break;
 		NO_DEFAULT;
 	}
 }
 
 void
-irstm_to_c(irstm *ir, int prototype, int indent) {
+irstm_to_c(irstm *ir, int prototype, int indent, FILE *fd) {
 tail_recurse:
 	if(prototype && ir->type != SEQ && ir->type != FUNC && ir->type != EXTFUNC && ir->type != GINIT) {
 		return;
 	}
 	switch(ir->type) {
 		case SEQ:
-			irstm_to_c(ir->seq.left, prototype, indent);
+			irstm_to_c(ir->seq.left, prototype, indent, fd);
 			// irstm_to_c(ir->seq.right, prototype, indent);
 			ir = ir->seq.right;
 			goto tail_recurse;
 			break;
 		case MOVE:
-			print_indent(indent);
-			irexp_to_c(ir->move.dst, C_RAW);
-			printf(" = ");
-			irexp_to_c(ir->move.src, C_UNION);
-			puts(";");
+			print_indent_fd(fd, indent);
+			irexp_to_c(ir->move.dst, C_RAW, fd);
+			fprintf(fd, " = ");
+			irexp_to_c(ir->move.src, C_UNION, fd);
+			puts_fd(";", fd);
 			break;
 		case EXP:
-			print_indent(indent);
-			irexp_to_c(ir->exp, C_RAW);
-			puts(";");
+			print_indent_fd(fd, indent);
+			irexp_to_c(ir->exp, C_RAW, fd);
+			puts_fd(";", fd);
 			break;
 		case JUMP:
-			print_indent(indent);
-			printf("goto lbl%04d;\n", get_ssmlabel_from_irlabel(ir->jump));
+			print_indent_fd(fd, indent);
+			fprintf(fd, "goto lbl%04d;\n", get_ssmlabel_from_irlabel(ir->jump));
 			break;
 		case CJUMP: {
 			irstm *tbody = ir->cjump.iftrue, *fbody = ir->cjump.iffalse;
-			print_indent(indent);
+			print_indent_fd(fd, indent);
 			if(tbody == NULL && fbody == NULL) {
-				return irexp_to_c(ir->cjump.cond, C_RAW);
+				return irexp_to_c(ir->cjump.cond, C_RAW, fd);
 			}
-			printf("if(");
+			fprintf(fd, "if(");
 			if(tbody == NULL) {
-				printf("!");
+				fprintf(fd, "!");
 				tbody = fbody;
 				fbody = NULL;
 			}
-			irexp_to_c(ir->cjump.cond, C_BOOL);
-			puts(") {");
-			irstm_to_c(tbody, prototype, indent+1);
+			irexp_to_c(ir->cjump.cond, C_BOOL, fd);
+			puts_fd(") {", fd);
+			irstm_to_c(tbody, prototype, indent+1, fd);
 			if(fbody != NULL) {
-				print_indent(indent);
-				puts("} else {");
-				irstm_to_c(fbody, prototype, indent+1);
+				print_indent_fd(fd, indent);
+				puts_fd("} else {", fd);
+				irstm_to_c(fbody, prototype, indent+1, fd);
 			}
-			print_indent(indent);
-			puts("}");
+			print_indent_fd(fd, indent);
+			puts_fd("}", fd);
 			break;
 		}
 		case LABEL:
-			printf("lbl%04d: \n", get_ssmlabel_from_irlabel(ir->label));
+			fprintf(fd, "lbl%04d: \n", get_ssmlabel_from_irlabel(ir->label));
 			break;
 		case RET:
-			print_indent(indent);
-			printf("return ");
-			irexp_to_c(ir->ret, C_UNION);
-			puts(";");
+			print_indent_fd(fd, indent);
+			fprintf(fd, "return ");
+			irexp_to_c(ir->ret, C_UNION, fd);
+			puts_fd(";", fd);
 			break;
 		case TRAP:
-			print_indent(indent);
+			print_indent_fd(fd, indent);
 			switch(ir->trap.syscall) {
 				case 0:
-					printf("printf(\"%%d\\n\", ");
-					irexp_to_c(ir->trap.arg, C_INT);
-					puts(");");
+					fprintf(fd, "printf(\"%%d\\n\", ");
+					irexp_to_c(ir->trap.arg, C_INT, fd);
+					puts_fd(");", fd);
 					break;
 				NO_DEFAULT;
 			}
 			break;
 		case HALT:
-			print_indent(indent);
-			puts("exit(0);");
+			print_indent_fd(fd, indent);
+			puts_fd("exit(0);", fd);
 			break;
 		case FUNC:
 			if(!prototype) {
-				print_indent(indent-1);
-				puts("}\n");
+				print_indent_fd(fd, indent-1);
+				puts_fd("}\n", fd);
 			}
-			print_indent(indent-1);
-			printf("spltype f%d(", ir->func.funcid);
+			print_indent_fd(fd, indent-1);
+			fprintf(fd, "spltype f%d(", ir->func.funcid);
 			if(ir->func.args > 0) {
-				printf("spltype a0");
+				fprintf(fd, "spltype a0");
 				int i;
 				for(i = 1; ir->func.args > i; i++) {
-					printf(", spltype a%d", i);
+					fprintf(fd, ", spltype a%d", i);
 				}
 			}
 			if(prototype) {
-				puts(");");
+				puts_fd(");", fd);
 			} else {
-				puts(") {");
+				puts_fd(") {", fd);
 				if(ir->func.vars > 0) {
-					print_indent(indent);
-					printf("spltype l0");
+					print_indent_fd(fd, indent);
+					fprintf(fd, "spltype l0");
 					int i;
 					for(i = 1; ir->func.vars > i; i++) {
-						printf(", l%d", i);
+						fprintf(fd, ", l%d", i);
 					}
-					puts(";");
+					puts_fd(";", fd);
 				}
 			}
 			break;
 		case EXTFUNC:
 			if(!prototype) {
-				print_indent(indent-1);
-				puts("}\n");
+				print_indent_fd(fd, indent-1);
+				puts_fd("}\n", fd);
 			}
-			print_indent(indent-1);
-			printf("spltype f%d(", ir->extfunc.funcid);
+			print_indent_fd(fd, indent-1);
+			fprintf(fd, "spltype f%d(", ir->extfunc.funcid);
 			if(ir->extfunc.nargs > 0) {
-				printf("spltype a0");
+				fprintf(fd, "spltype a0");
 				int i;
 				for(i = 1; ir->extfunc.nargs > i; i++) {
-					printf(", spltype a%d", i);
+					fprintf(fd, ", spltype a%d", i);
 				}
 			}
 			if(prototype) {
-				puts(");");
+				puts_fd(");", fd);
 			} else {
-				puts(") {");
-				print_indent(indent);
+				puts_fd(") {", fd);
+				print_indent_fd(fd, indent);
 				if(ir->extfunc.returntype != C_VOID) {
-					printf("return ");
+					fprintf(fd, "return ");
 					if(ir->extfunc.returntype != C_UNION) {
-						printf("(spltype)");
+						fprintf(fd, "(spltype)");
 					}
 				}
-				printf("%s(", ir->extfunc.name);
+				fprintf(fd, "%s(", ir->extfunc.name);
 				struct splctypelist *args = ir->extfunc.args;
 				int n = 0;
 				while(args != NULL) {
 					switch(args->type) {
 						case C_INT:
-							printf("a%d.ival", n);
+							fprintf(fd, "a%d.ival", n);
 							break;
 						case C_BOOL:
-							printf("a%d.bval", n);
+							fprintf(fd, "a%d.bval", n);
 							break;
 						case C_UNION:
-							printf("a%d", n);
+							fprintf(fd, "a%d", n);
 							break;
 						case C_LIST:
-							printf("a%d.lval", n);
+							fprintf(fd, "a%d.lval", n);
 							break;
 						case C_TUPLE:
-							printf("a%d.tval", n);
+							fprintf(fd, "a%d.tval", n);
 							break;
 						NO_DEFAULT;
 					}
 					n++;
 					args = args->next;
 				}
-				puts(");");
+				puts_fd(");", fd);
 				if(ir->extfunc.returntype == C_VOID) {
-					print_indent(indent);
-					puts("return (spltype)0;");
+					print_indent_fd(fd, indent);
+					puts_fd("return (spltype)0;", fd);
 				}
 			}
 			break;
 		case GINIT:
 			if(prototype && ir->nglobals > 0) {
-				print_indent(indent);
-				printf("spltype g0");
+				print_indent_fd(fd, indent);
+				fprintf(fd, "spltype g0");
 				int i;
 				for(i = 1; ir->nglobals > i; i++) {
-					printf(", g%d", i);
+					fprintf(fd, ", g%d", i);
 				}
-				puts(";");
+				puts_fd(";", fd);
 			}
 			break;
 		NO_DEFAULT;
@@ -359,46 +366,46 @@ tail_recurse:
 }
 
 void
-ir_to_c(irstm *ir) {
-	puts("#include <stdio.h>");
-	puts("#include <stdlib.h>");
-	puts("struct _spllist;");
-	puts("struct _spltuple;");
-	puts("typedef union _spltype {");
-	puts("	int ival;");
-	puts("	int bval;");
-	puts("	struct _spllist *lval;");
-	puts("	struct _spltuple *tval;");
-	puts("} spltype;");
-	puts("typedef struct _spllist {");
-	puts("	spltype value;");
-	puts("	struct _spllist *next;");
-	puts("} spllist;");
-	puts("typedef struct _spltuple {");
-	puts("	spltype fst;");
-	puts("	spltype snd;");
-	puts("} spltuple;");
-	puts("");
-	irstm_to_c(ir, 1, 0);
-	puts("");
-	puts("spltype create_listel(spltype el, spllist *list) {");
-	puts("	spltype ret;");
-	puts("	ret.lval = malloc(sizeof(spllist));");
-	puts("	ret.lval->value = el;");
-	puts("	ret.lval->next = list;");
-	puts("	return ret;");
-	puts("}");
-	puts("spltype create_tuple(spltype fst, spltype snd) {");
-	puts("	spltype ret;");
-	puts("	ret.tval = malloc(sizeof(spltuple));");
-	puts("	ret.tval->fst = fst;");
-	puts("	ret.tval->snd = snd;");
-	puts("	return ret;");
-	puts("}");
-	puts("");
-	c_builtin_functions();
-	puts("");
-	puts("int main(int argc, char **argv) {");
-	irstm_to_c(ir, 0, 1);
-	puts("}");
+ir_to_c(irstm *ir, FILE *fd) {
+	puts_fd("#include <stdio.h>", fd);
+	puts_fd("#include <stdlib.h>", fd);
+	puts_fd("struct _spllist;", fd);
+	puts_fd("struct _spltuple;", fd);
+	puts_fd("typedef union _spltype {", fd);
+	puts_fd("	int ival;", fd);
+	puts_fd("	int bval;", fd);
+	puts_fd("	struct _spllist *lval;", fd);
+	puts_fd("	struct _spltuple *tval;", fd);
+	puts_fd("} spltype;", fd);
+	puts_fd("typedef struct _spllist {", fd);
+	puts_fd("	spltype value;", fd);
+	puts_fd("	struct _spllist *next;", fd);
+	puts_fd("} spllist;", fd);
+	puts_fd("typedef struct _spltuple {", fd);
+	puts_fd("	spltype fst;", fd);
+	puts_fd("	spltype snd;", fd);
+	puts_fd("} spltuple;", fd);
+	puts_fd("", fd);
+	irstm_to_c(ir, 1, 0, fd);
+	puts_fd("", fd);
+	puts_fd("spltype create_listel(spltype el, spllist *list) {", fd);
+	puts_fd("	spltype ret;", fd);
+	puts_fd("	ret.lval = malloc(sizeof(spllist));", fd);
+	puts_fd("	ret.lval->value = el;", fd);
+	puts_fd("	ret.lval->next = list;", fd);
+	puts_fd("	return ret;", fd);
+	puts_fd("}", fd);
+	puts_fd("spltype create_tuple(spltype fst, spltype snd) {", fd);
+	puts_fd("	spltype ret;", fd);
+	puts_fd("	ret.tval = malloc(sizeof(spltuple));", fd);
+	puts_fd("	ret.tval->fst = fst;", fd);
+	puts_fd("	ret.tval->snd = snd;", fd);
+	puts_fd("	return ret;", fd);
+	puts_fd("}", fd);
+	puts_fd("", fd);
+	c_builtin_functions(fd);
+	puts_fd("", fd);
+	puts_fd("int main(int argc, char **argv) {", fd);
+	irstm_to_c(ir, 0, 1, fd);
+	puts_fd("}", fd);
 }
