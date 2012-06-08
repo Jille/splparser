@@ -106,8 +106,8 @@ tail_recurse:
 	}
 }
 
-static synt_tree *
-_read_synt_tree(FILE *fh) {
+synt_tree *
+read_synt_tree_fh(FILE *fh) {
 	if(feof(fh)) {
 		return NULL;
 	}
@@ -136,9 +136,9 @@ _read_synt_tree(FILE *fh) {
 			return NULL;
 		default:
 			ret->type = 1;
-			ret->fst_child = _read_synt_tree(fh);
+			ret->fst_child = read_synt_tree_fh(fh);
 	}
-	ret->next = _read_synt_tree(fh);
+	ret->next = read_synt_tree_fh(fh);
 	return ret;
 }
 
@@ -152,7 +152,7 @@ read_synt_tree(char *file) {
 		free(error);
 		return NULL;
 	}
-	synt_tree *t = _read_synt_tree(fh);
+	synt_tree *t = read_synt_tree_fh(fh);
 	fclose(fh);
 	return t;
 }

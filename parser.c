@@ -65,8 +65,15 @@ main(int argc, char **argv) {
 	synt_tree *t = parse_input_files(gram, argv + optind);
 
 	if(usestdlib) {
-		synt_tree *stdlib = read_synt_tree("stdlib.ast");
+		FILE *fh = fopen("stdlib.ast", "r");
+		if(fh == 0) {
+			perror("Could not read standard library file");
+			fprintf(stderr, "If you haven't created the standard library file yet, run:\n  ./parser -p stdlib.spl\n");
+			return 1;
+		}
+		synt_tree *stdlib = read_synt_tree_fh(fh);
 		t = merge_synt_trees(gram, stdlib, t);
+		fclose(fh);
 	}
 	printf("Syntax tree:\n");
 	show_synt_tree(t, 0, gram);
