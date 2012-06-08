@@ -29,6 +29,11 @@ struct attempt *att_head;
 static int usestdlib = 1;
 static int parseonly = 0;
 
+void
+usage(char *exec) {
+	fprintf(stderr, "Usage: %s [-pL] [-s [out.ssm]] [-c] [g grammar.g] splfile\n", exec);
+}
+
 int
 main(int argc, char **argv) {
 	int opt;
@@ -55,13 +60,17 @@ main(int argc, char **argv) {
 				usestdlib = 0;
 				break;
 			default:
-				fprintf(stderr, "Usage: %s [-pL] [-s [out.ssm]] [-c] [-g grammar.g]\n", argv[0]);
+				usage(argv[0]);
 				return 1;
 		}
 	}
 
 	// XXX load the grammar in another thread
 	grammar *gram = parse_grammar(gramfile);
+	if(argc == optind) {
+		usage(argv[0]);
+		return 1;
+	}
 	synt_tree *t = parse_input_files(gram, argv + optind);
 
 	if(usestdlib) {
