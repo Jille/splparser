@@ -58,7 +58,7 @@ parse_branch(grammar *g, char *str) {
 grammar *
 parse_grammar(char *file) {
 	FILE *fh = fopen(file, "r");
-	if(fh == 0) {
+	if(fh == NULL) {
 		perror("Could not load grammar");
 		abort();
 	}

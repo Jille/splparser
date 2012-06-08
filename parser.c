@@ -83,7 +83,7 @@ main(int argc, char **argv) {
 
 	if(usestdlib) {
 		FILE *fh = fopen("stdlib.ast", "r");
-		if(fh == 0) {
+		if(fh == NULL) {
 			perror("Could not read standard library file");
 			fprintf(stderr, "If you haven't created the standard library file yet, run:\n  ./parser -p stdlib.spl\n");
 			return 1;
