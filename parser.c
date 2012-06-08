@@ -31,7 +31,7 @@ static int parseonly = 0;
 
 void
 usage(char *exec) {
-	fprintf(stderr, "Usage: %s [-pL] [-s [out.ssm]] [-c] [g grammar.g] splfile\n", exec);
+	fprintf(stderr, "Usage: %s [-aipL] [-s [out.ssm]] [-c] [g grammar.g] splfile\n", exec);
 }
 
 int
@@ -40,9 +40,17 @@ main(int argc, char **argv) {
 	char *assembly = (void *)-1;
 	char *ccode = (void *)-1;
 	char *gramfile = "grammar.g";
+	int print_ast = 0;
+	int print_ir = 0;
 
-	while((opt = getopt(argc, argv, "pcs::g:L")) != -1) {
+	while((opt = getopt(argc, argv, "aipcs::g:L")) != -1) {
 		switch(opt) {
+			case 'a':
+				print_ast = 1;
+				break;
+			case 'i':
+				print_ir = 1;
+				break;
 			case 'p':
 				parseonly = 1;
 				break;
@@ -84,16 +92,21 @@ main(int argc, char **argv) {
 		t = merge_synt_trees(gram, stdlib, t);
 		fclose(fh);
 	}
-	printf("Syntax tree:\n");
-	show_synt_tree(t, 0, gram);
+
+	if(print_ast) {
+		printf("Syntax tree:\n");
+		show_synt_tree(t, 0, gram);
+	}
 
 	if(parseonly) {
 		return 0;
 	}
 
 	struct irunit *ir = typechecker(t, gram);
-	show_ir_tree(ir, 0);
-	printf("\n");
+	if(print_ir) {
+		show_ir_tree(ir, 0);
+		printf("\n");
+	}
 
 	if(assembly != (void *)-1) {
 		struct ssmline *ssm = ir_to_ssm(ir);
