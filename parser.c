@@ -393,11 +393,16 @@ create_synt_error()
 }
 
 void
-print_indent(int indent) {
+print_indent_fd(FILE *fd, int indent) {
 	int i;
 	for(i = 0; indent > i; i++) {
-		printf("  ");
+		fprintf(fd, "  ");
 	}
+}
+
+void
+print_indent(int indent) {
+	print_indent_fd(stdout, indent);
 }
 
 void

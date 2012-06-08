@@ -40,5 +40,6 @@ synt_error *create_synt_error();
 void update_synt_error(synt_error*, const char *error, int row, int col);
 
 void print_indent(int indent);
+void print_indent_fd(FILE *fd, int indent);
 void show_synt_tree(synt_tree*, int indent, grammar *gram);
 void pretty_print(synt_tree *t, struct pretty_print_state *state, grammar *gram);
