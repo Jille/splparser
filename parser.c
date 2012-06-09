@@ -31,7 +31,7 @@ static int parseonly = 0;
 
 void
 usage(char *exec) {
-	fprintf(stderr, "Usage: %s [-aipL] [-s [out.ssm]] [-c] [g grammar.g] splfile\n", exec);
+	fprintf(stderr, "Usage: %s [-aipLSC] [-s out.ssm] [-c out.c] [g grammar.g] splfile\n", exec);
 }
 
 int
@@ -43,7 +43,7 @@ main(int argc, char **argv) {
 	int print_ast = 0;
 	int print_ir = 0;
 
-	while((opt = getopt(argc, argv, "aipcs::g:L")) != -1) {
+	while((opt = getopt(argc, argv, "aipCSc:s:g:L")) != -1) {
 		switch(opt) {
 			case 'a':
 				print_ast = 1;
@@ -57,8 +57,13 @@ main(int argc, char **argv) {
 			case 's':
 				assembly = optarg;
 				break;
+			case 'S':
+				assembly = NULL;
+				break;
 			case 'c':
-				// XXX file laten accepteren zodra ir_to_c() dat kan
+				ccode = optarg;
+				break;
+			case 'C':
 				ccode = NULL;
 				break;
 			case 'g':
@@ -120,8 +125,23 @@ main(int argc, char **argv) {
 	}
 
 	if(ccode != (void *)-1) {
-		// XXX support voor writen naar een file
-		ir_to_c(ir);
+		FILE *fh;
+		if(ccode == NULL) {
+			fh = stdout;
+		} else {
+			fh = fopen(ccode, "w");
+			if(fh == NULL) {
+				char *error;
+				asprintf(&error, "Couldn't write to C file %s", ccode);
+				perror(error);
+				free(error);
+				return 1;
+			}
+		}
+		ir_to_c(ir, fh);
+		if(ccode != NULL) {
+			fclose(fh);
+		}
 	}
 
 	free(t);
@@ -393,11 +413,16 @@ create_synt_error()
 }
 
 void
-print_indent(int indent) {
+print_indent_fd(FILE *fd, int indent) {
 	int i;
 	for(i = 0; indent > i; i++) {
-		printf("  ");
+		fprintf(fd, "  ");
 	}
+}
+
+void
+print_indent(int indent) {
+	print_indent_fd(stdout, indent);
 }
 
 void

@@ -178,20 +178,20 @@ ssm_builtin_functions(FILE *fh) {
 }
 
 void
-c_builtin_functions() {
-	printf("spltype f%d /* head */(spltype list) {\n", builtin_head);
-	puts("	return list.lval->value;");
-	puts("}");
-	printf("spltype f%d /* tail */(spltype list) {\n", builtin_tail);
-	puts("	return (spltype)list.lval->next;");
-	puts("}");
-	printf("spltype f%d /* isempty */(spltype list) {\n", builtin_isempty);
-	puts("	return (spltype)(list.lval->next == NULL);");
-	puts("}");
-	printf("spltype f%d /* fst */(spltype list) {\n", builtin_fst);
-	puts("	return list.tval->fst;");
-	puts("}");
-	printf("spltype f%d /* snd */(spltype list) {\n", builtin_snd);
-	puts("	return list.tval->snd;");
-	puts("}");
+c_builtin_functions(FILE *fd) {
+	fprintf(fd, "spltype f%d /* head */(spltype list) {\n", builtin_head);
+	fputs("	return list.lval->value;\n", fd);
+	fputs("}\n", fd);
+	fprintf(fd, "spltype f%d /* tail */(spltype list) {\n", builtin_tail);
+	fputs("	return (spltype)list.lval->next;\n", fd);
+	fputs("}\n", fd);
+	fprintf(fd, "spltype f%d /* isempty */(spltype list) {\n", builtin_isempty);
+	fputs("	return (spltype)(list.lval->next == NULL);\n", fd);
+	fputs("}\n", fd);
+	fprintf(fd, "spltype f%d /* fst */(spltype list) {\n", builtin_fst);
+	fputs("	return list.tval->fst;\n", fd);
+	fputs("}\n", fd);
+	fprintf(fd, "spltype f%d /* snd */(spltype list) {\n", builtin_snd);
+	fputs("	return list.tval->snd;\n", fd);
+	fputs("}\n", fd);
 }

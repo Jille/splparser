@@ -23,7 +23,7 @@ helloworld() {
 }
 
 Int
-main(Int argc, [Int] argv) {
+main() {
 	Int ret = 0;
 	helloworld();
 	ret = 1;
