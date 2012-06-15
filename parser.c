@@ -42,8 +42,9 @@ main(int argc, char **argv) {
 	char *gramfile = "grammar.g";
 	int print_ast = 0;
 	int print_ir = 0;
+	int print_pretty = 0;
 
-	while((opt = getopt(argc, argv, "aipCSc:s:g:L")) != -1) {
+	while((opt = getopt(argc, argv, "aipPCSc:s:g:L")) != -1) {
 		switch(opt) {
 			case 'a':
 				print_ast = 1;
@@ -53,6 +54,9 @@ main(int argc, char **argv) {
 				break;
 			case 'p':
 				parseonly = 1;
+				break;
+			case 'P':
+				print_pretty = 1;
 				break;
 			case 's':
 				assembly = optarg;
@@ -101,6 +105,12 @@ main(int argc, char **argv) {
 	if(print_ast) {
 		printf("Syntax tree:\n");
 		show_synt_tree(t, 0, gram);
+	}
+
+	if(print_pretty) {
+		printf("Pretty print:\n");
+		struct pretty_print_state *s = calloc(1, sizeof(struct pretty_print_state));
+		pretty_print(t, s, gram);
 	}
 
 	if(parseonly) {
@@ -556,6 +566,10 @@ pretty_print(synt_tree *t, struct pretty_print_state *state, grammar *gram)
 			break;
 		case T_LTE:
 			printf(" <= ");
+			state->had_text = 0;
+			break;
+		case T_EXTERN:
+			printf(" EXTERN ");
 			state->had_text = 0;
 			break;
 		case '{':
