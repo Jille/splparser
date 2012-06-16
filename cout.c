@@ -77,8 +77,6 @@ irexp_to_c(irexp *ir, splctype how, FILE *fd) {
 			splctype ltype = C_VOID, rtype = C_VOID, otype;
 			// C_VOID means it will inherit the otype.
 			switch(ir->binop.op) {
-				case EQ:
-				case NE:
 				case AND:
 					otype = C_BOOL;
 					ltype = rtype = C_RAW;
@@ -91,6 +89,8 @@ irexp_to_c(irexp *ir, splctype how, FILE *fd) {
 				case GT:
 				case GE:
 				case LE:
+				case EQ:
+				case NE:
 					otype = C_BOOL;
 					ltype = rtype = C_INT;
 					break;
