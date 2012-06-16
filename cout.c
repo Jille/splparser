@@ -369,6 +369,7 @@ void
 ir_to_c(irstm *ir, FILE *fd) {
 	puts_fd("#include <stdio.h>", fd);
 	puts_fd("#include <stdlib.h>", fd);
+	puts_fd("#include <unistd.h>", fd);
 	puts_fd("struct _spllist;", fd);
 	puts_fd("struct _spltuple;", fd);
 	puts_fd("typedef union _spltype {", fd);
