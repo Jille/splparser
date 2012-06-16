@@ -757,11 +757,15 @@ DESCEND_FUNC(expression) {
 		if(fst.type != T_INT || snd.type != T_INT)
 			PARSING_FAIL("Numeric comparison (<, >, <=, >=) works only on integers");
 		res->type = T_BOOL;
-		if(token == '<' || token == T_LTE) {
-			return mkirbinop(LE, lhs, rhs);
-		} else {
-			return mkirbinop(GE, lhs, rhs);
+		irop op;
+		switch(token) {
+		case '<': op = LT; break;
+		case '>': op = GT; break;
+		case T_LTE: op = LE; break;
+		case T_GTE: op = GE; break;
+		default: abort();
 		}
+		return mkirbinop(op, lhs, rhs);
 	// Binary composition operators
 	case T_AND:
 	case T_OR:
