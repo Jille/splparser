@@ -162,9 +162,8 @@ ssm_builtin_functions(FILE *fh) {
 	fprintf(fh, "         STR RR\n");
 	fprintf(fh, "         RET\n");
 	fprintf(fh, "lbl%04d: LDS -1 ; Builtin function isempty()\n", get_ssmlabel_from_irfunc(builtin_isempty));
-	fprintf(fh, "         LDA 1\n");
 	fprintf(fh, "         LDC 0\n");
-	fprintf(fh, "         NE\n");
+	fprintf(fh, "         EQ\n");
 	fprintf(fh, "         STR RR\n");
 	fprintf(fh, "         RET\n");
 	fprintf(fh, "lbl%04d: LDS -1 ; Builtin function fst()\n", get_ssmlabel_from_irfunc(builtin_fst));
