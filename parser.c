@@ -31,7 +31,7 @@ static int parseonly = 0;
 
 void
 usage(char *exec) {
-	fprintf(stderr, "Usage: %s [-aipLSC] [-s out.ssm] [-c out.c] [g grammar.g] splfile\n", exec);
+	fprintf(stderr, "Usage: %s [-aipLSC] [-s out.ssm] [-c out.c] [-g grammar.g] splfile\n", exec);
 }
 
 int
