@@ -28,6 +28,7 @@ irop_to_string(irop op, int shrt)
 	case GT:      return shrt ? ">"  : "GT";
 	case LE:      return shrt ? "<=" : "LE";
 	case GE:      return shrt ? ">=" : "GE";
+	case MOD:     return shrt ? "%"  : "MOD";
 	default:      return "???";
 	}
 }
