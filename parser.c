@@ -31,7 +31,7 @@ static int parseonly = 0;
 
 void
 usage(char *exec) {
-	fprintf(stderr, "Usage: %s [-aipLSC] [-s out.ssm] [-c out.c] [-g grammar.g] splfile\n", exec);
+	fprintf(stderr, "Usage: %s [-aipLSC] [-s out.ssm] [-c out.c] [-o out] [-g grammar.g] splfile\n", exec);
 }
 
 int
@@ -39,12 +39,13 @@ main(int argc, char **argv) {
 	int opt;
 	char *assembly = (void *)-1;
 	char *ccode = (void *)-1;
+	char *exec = NULL;
 	char *gramfile = "grammar.g";
 	int print_ast = 0;
 	int print_ir = 0;
 	int print_pretty = 0;
 
-	while((opt = getopt(argc, argv, "aipPCSc:s:g:L")) != -1) {
+	while((opt = getopt(argc, argv, "aipPCSc:o:s:g:L")) != -1) {
 		switch(opt) {
 			case 'a':
 				print_ast = 1;
@@ -66,6 +67,9 @@ main(int argc, char **argv) {
 				break;
 			case 'c':
 				ccode = optarg;
+				break;
+			case 'o':
+				exec = optarg;
 				break;
 			case 'C':
 				ccode = NULL;
@@ -151,6 +155,54 @@ main(int argc, char **argv) {
 		ir_to_c(ir, fh);
 		if(ccode != NULL) {
 			fclose(fh);
+		}
+	}
+
+	if(exec != NULL) {
+		char *tmpfile = tmpnam(NULL);
+		if(tmpfile == NULL) {
+			perror("Failed to open temporary file");
+			return 1;
+		}
+		FILE *fh = fopen(tmpfile, "w");
+		if(fh == NULL) {
+			char *error;
+			asprintf(&error, "Failed to open temporary file %s", tmpfile);
+			perror(error);
+			free(error);
+			return 1;
+		}
+		ir_to_c(ir, fh);
+		fclose(fh);
+		const char *compiler = getenv("CC");
+		if(compiler == NULL) {
+			compiler = "cc";
+		}
+		pid_t child = fork();
+		if(child == 0) {
+			// I'm the child, exec() gcc
+			char *const args[] = {"cc", "-x", "c", tmpfile, "-o", exec, NULL};
+			execvp(compiler, args);
+			char *error;
+			asprintf(&error, "Failed to execute compiler %s", compiler);
+			perror(error);
+			free(error);
+			exit(1);
+		} else if(child < 0) {
+			perror("Failed to create child compiler process");
+			unlink(tmpfile);
+		} else {
+			// I'm the parent, wait for the child to complete
+			int stat_loc = 0;
+			pid_t stopped = 0;
+			do {
+				stopped = waitpid(child, &stat_loc, 0);
+			} while(stopped != child);
+			unlink(tmpfile);
+			if(!WIFEXITED(stat_loc) || WEXITSTATUS(stat_loc) != 0) {
+				fprintf(stderr, "Failed to run compiler %s.\n", compiler);
+				return 1;
+			}
 		}
 	}
 
