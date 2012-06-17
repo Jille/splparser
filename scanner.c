@@ -289,7 +289,11 @@ scan_initial_sign(struct scannerstate *st, int in) {
 #ifdef STANDALONE
 int
 main(int argc, char **argv) {
-	generator *g  = generator_create(gen_tokens, "test.spl", 0);
+	char *filename = strdup("test.spl");
+	if(argc > 1) {
+		filename = strdup(argv[1]);
+	}
+	generator *g  = generator_create(gen_tokens, filename, 0);
 	while(!generator_eof(g)) {
 		struct token *t = generator_shift(g);
 		printf("Token: %s\n", token_to_string(t->type));
@@ -304,6 +308,7 @@ main(int argc, char **argv) {
 		}
 		free(t);
 	}
+	free(filename);
 	return 0;
 }
 #endif
