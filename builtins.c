@@ -185,7 +185,7 @@ c_builtin_functions(FILE *fd) {
 	fputs("	return (spltype)list.lval->next;\n", fd);
 	fputs("}\n", fd);
 	fprintf(fd, "spltype f%d /* isempty */(spltype list) {\n", builtin_isempty);
-	fputs("	return (spltype)(list.lval->next == NULL);\n", fd);
+	fputs("	return (spltype)(list.lval == NULL);\n", fd);
 	fputs("}\n", fd);
 	fprintf(fd, "spltype f%d /* fst */(spltype list) {\n", builtin_fst);
 	fputs("	return list.tval->fst;\n", fd);
