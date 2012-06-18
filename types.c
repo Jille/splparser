@@ -277,7 +277,7 @@ DESCEND_FUNC(init_code) {
 	struct type rtype;
 	rtype.type = T_INT;
 	unify_types(tg, &rtype, f->returntype, NULL);
-	return irconcat(mkirtrap(0, mkircall(f->func, NULL)), mkirhalt(), program, NULL);
+	return irconcat(mkirtrap(0, mkircall(f->func, NULL)), mkirsofthalt(), program, NULL);
 }
 
 DESCEND_FUNC(rettype) {

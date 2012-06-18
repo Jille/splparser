@@ -469,6 +469,8 @@ ir_to_ssm(struct irunit *ir) {
 		res->arg1.intval = ir->trap.syscall;
 		ssm_iterate_last(exp)->next = res;
 		return exp;
+	case SOFTHALT:
+		// XXX
 	case HALT:
 		return alloc_ssmline(SHALT);
 	case LABEL: ;

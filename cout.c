@@ -260,6 +260,10 @@ tail_recurse:
 				NO_DEFAULT;
 			}
 			break;
+		case SOFTHALT:
+			print_indent_fd(fd, indent);
+			puts_fd("pthread_exit(0);", fd);
+			break;
 		case HALT:
 			print_indent_fd(fd, indent);
 			puts_fd("exit(0);", fd);

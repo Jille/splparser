@@ -1,7 +1,7 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL, TUPLE, GINIT, EXTFUNC, SPAWN, YIELD } irtype;
+typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, SOFTHALT, HALT, LISTEL, TUPLE, GINIT, EXTFUNC, SPAWN, YIELD } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 typedef enum { C_VOID, C_UNION, C_RAW, C_INT, C_BOOL, C_LIST, C_TUPLE } splctype;
 
@@ -125,6 +125,7 @@ irstm *mkirret(irexp *exp);
 irstm *mkirfunc(irfunc f, int nargs, int nvars);
 irstm *mkirextfunc(irfunc f, char *name, splctype returntype, int nargs, struct splctypelist *args);
 irstm *mkirtrap(int syscall, irexp *arg);
+irstm *mkirsofthalt(void);
 irstm *mkirhalt(void);
 irstm *mkirginit(int globals);
 irstm *mkirspawn(irfunc func);

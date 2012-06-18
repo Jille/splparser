@@ -217,6 +217,9 @@ show_ir_tree(struct irunit *ir, int indent) {
 		print_indent(indent);
 		printf(")");
 		break;
+	case SOFTHALT:
+		printf("SOFTHALT");
+		break;
 	case HALT:
 		printf("HALT");
 		break;
@@ -412,6 +415,11 @@ irstm *mkirtrap(int syscall, irexp *arg) {
 	ret->type = TRAP;
 	ret->trap.syscall = syscall;
 	ret->trap.arg = arg;
+	return ret;
+}
+irstm *mkirsofthalt() {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = SOFTHALT;
 	return ret;
 }
 irstm *mkirhalt() {
