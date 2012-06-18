@@ -367,7 +367,7 @@ tail_recurse:
 			print_indent_fd(fd, indent+1);
 			fprintf(fd, "pthread_t thr;\n");
 			print_indent_fd(fd, indent+1);
-			fprintf(fd, "pthread_create(&thr, NULL, f%d, NULL);\n", ir->threadfunc);
+			fprintf(fd, "pthread_create(&thr, NULL, (threadfunc)f%d, NULL);\n", ir->threadfunc);
 			print_indent_fd(fd, indent);
 			fprintf(fd, "}\n");
 			break;
@@ -402,6 +402,7 @@ ir_to_c(irstm *ir, FILE *fd) {
 	puts_fd("	spltype fst;", fd);
 	puts_fd("	spltype snd;", fd);
 	puts_fd("} spltuple;", fd);
+	puts_fd("typedef void *(*threadfunc)(void *);", fd);
 	puts_fd("", fd);
 	irstm_to_c(ir, 1, 0, fd);
 	puts_fd("", fd);
