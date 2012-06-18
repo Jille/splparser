@@ -17,9 +17,7 @@ helloworld() {
 	putchar(114);
 	putchar(108);
 	putchar(100);
-	putchar(46);
-	putchar(92);
-	putchar(110);
+	putchar(10);
 }
 
 Int
