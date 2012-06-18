@@ -373,7 +373,7 @@ tail_recurse:
 			break;
 		case YIELD:
 			print_indent_fd(fd, indent);
-			fprintf(fd, "pthread_yield();\n");
+			fprintf(fd, "sched_yield();\n");
 			break;
 		NO_DEFAULT;
 	}
@@ -384,6 +384,8 @@ ir_to_c(irstm *ir, FILE *fd) {
 	puts_fd("#include <stdio.h>", fd);
 	puts_fd("#include <stdlib.h>", fd);
 	puts_fd("#include <unistd.h>", fd);
+	puts_fd("#include <pthread.h>", fd);
+	puts_fd("#include <sched.h>", fd);
 	puts_fd("struct _spllist;", fd);
 	puts_fd("struct _spltuple;", fd);
 	puts_fd("typedef union _spltype {", fd);
