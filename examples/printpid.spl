@@ -1,0 +1,20 @@
+Int putchar(Int char) EXTERN putchar;
+Int getpid() EXTERN getpid;
+
+Void putint(Int num) {
+	Int digit = num % 10;
+	Int rest = num / 10;
+	digit = digit + 48;
+	if(rest > 0) {
+		putint(rest);
+	}
+	putchar(digit);
+}
+
+Int
+main() {
+	Int pid = getpid();
+	putint(pid);
+	putchar(10);
+	return 0;
+}

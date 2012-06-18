@@ -1,0 +1,45 @@
+Int putchar(Int char) EXTERN putchar;
+
+Void putint(Int num) {
+        Int digit = num % 10;
+        Int rest = num / 10;
+        digit = digit + 48;
+        if(rest > 0) {
+                putint(rest);
+        }
+        putchar(digit);
+}
+
+t last([t] xs) {
+	if(isempty(tail(xs))) {
+		return head(xs);
+	} else {
+		return last(tail(xs));
+	}
+}
+
+[t] init([t] xs) {
+	if(isempty(tail(xs))) {
+		return [];
+	} else {
+		return head(xs) : init(tail(xs));
+	}
+}
+
+[Int] reverse([Int] xs) {
+	if(isempty(tail(xs))) {
+		putint(head(xs));
+		putchar(10);
+		return head(xs) : [];
+	} else {
+		putint(last(xs));
+		putchar(10);
+		return last(xs) : reverse(init(xs));
+	}
+}
+
+Int main() {
+	[Int] items = 1 : 2 : 3 : 4 : 5 : 6 : 7 : [];
+	items = reverse(items);
+	return 0;
+}

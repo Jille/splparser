@@ -1,0 +1,35 @@
+Int putchar(Int char) EXTERN putchar;
+
+Void putint(Int num) {
+	Int digit = num % 10;
+	Int rest = num / 10;
+	digit = digit + 48;
+	putchar(digit);
+	if(rest > 0) {
+		putint(rest);
+	}
+}
+
+Int sumlist([Int] list) {
+	Int num = 0;
+	if(isempty(list)) {
+		putchar(48);
+		putchar(32);
+		putchar(61);
+		putchar(32);
+		return 0;
+	}
+	num = head(list);
+	putint(num);
+	putchar(32);
+	putchar(43);
+	putchar(32);
+	return num + sumlist(tail(list));
+}
+
+Int
+main() {
+	Int ret = 0;
+	ret = sumlist(2 : 3 : 5 : 7 : 11 : 17 : 23 : 27 : []);
+	return ret;
+}

@@ -1,0 +1,10 @@
+Int sumtuple((Int, (Int, Int)) tuple) {
+	return fst(tuple) + fst(snd(tuple)) + snd(snd(tuple));
+}
+
+Int
+main() {
+	Int ret = 0;
+	ret = sumtuple((2, (3, 5)));
+	return ret;
+}

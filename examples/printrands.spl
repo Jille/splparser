@@ -1,0 +1,16 @@
+
+Void putints([Int] num) {
+	if(!isempty(num)) {
+		putint(head(num));
+		putchar(10);
+		putints(tail(num));
+	}
+}
+
+Int main() {
+	[Int] rands = [];
+	srand(getpid());
+	rands = getrands(10);
+	putints(rands);
+	return 0;
+}

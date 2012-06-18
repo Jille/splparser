@@ -1,0 +1,27 @@
+Int random = 4;
+
+Int
+incr(Int a) {
+	return a+1;
+}
+
+Bool
+ispositive(Int a) {
+	return a >= 0;
+}
+
+Int random() EXTERN rand;
+Int getpid() EXTERN getpid;
+Void srand(Int a) EXTERN srand;
+Void putchar(Int char) EXTERN putchar;
+
+Void putint(Int num) {
+	Int digit = num % 10;
+	Int rest = num / 10;
+	digit = digit + 48;
+	if(rest > 0) {
+		putint(rest);
+	}
+	putchar(digit);
+}
+

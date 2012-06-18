@@ -1,0 +1,10 @@
+[Int] getrands(Int num) {
+	if(num == 0) {
+		return [];
+	} else if(num == 1) {
+		return random() : [];
+	} else {
+		return random() : getrands(num - 1);
+	}
+}
+
