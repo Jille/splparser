@@ -127,5 +127,7 @@ irstm *mkirextfunc(irfunc f, char *name, splctype returntype, int nargs, struct 
 irstm *mkirtrap(int syscall, irexp *arg);
 irstm *mkirhalt(void);
 irstm *mkirginit(int globals);
+irstm *mkirspawn(irfunc func);
+irstm *mkiryield(void);
 
 #endif
