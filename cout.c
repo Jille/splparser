@@ -180,7 +180,7 @@ irexp_to_c(irexp *ir, splctype how, FILE *fd) {
 			fprintf(fd, "create_tuple(");
 			irexp_to_c(ir->tuple.fst, C_UNION, fd);
 			fprintf(fd, ", ");
-			irexp_to_c(ir->tuple.fst, C_UNION, fd);
+			irexp_to_c(ir->tuple.snd, C_UNION, fd);
 			fprintf(fd, ")");
 			break;
 		NO_DEFAULT;
