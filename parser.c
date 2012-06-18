@@ -6,6 +6,7 @@
 #include <getopt.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include "lazyarray.h"
 #include "scanner.h"
