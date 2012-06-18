@@ -361,6 +361,20 @@ tail_recurse:
 				puts_fd(";", fd);
 			}
 			break;
+		case SPAWN:
+			print_indent_fd(fd, indent);
+			fprintf(fd, "{\n");
+			print_indent_fd(fd, indent+1);
+			fprintf(fd, "pthread_t thr;\n");
+			print_indent_fd(fd, indent+1);
+			fprintf(fd, "pthread_create(&thr, NULL, f%d, NULL);\n", ir->threadfunc);
+			print_indent_fd(fd, indent);
+			fprintf(fd, "}\n");
+			break;
+		case YIELD:
+			print_indent_fd(fd, indent);
+			fprintf(fd, "pthread_yield();\n");
+			break;
 		NO_DEFAULT;
 	}
 }

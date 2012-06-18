@@ -182,7 +182,7 @@ main(int argc, char **argv) {
 		pid_t child = fork();
 		if(child == 0) {
 			// I'm the child, exec() gcc
-			char *const args[] = {"cc", "-x", "c", tmpfile, "-o", exec, NULL};
+			char *const args[] = {"cc", "-x", "c", "-lpthread", tmpfile, "-o", exec, NULL};
 			execvp(compiler, args);
 			char *error;
 			asprintf(&error, "Failed to execute compiler %s", compiler);
