@@ -5,6 +5,7 @@ thread1() {
 	Int i = start;
 	while(i <= stop) {
 		putint(i);
+		putchar(10);
 		i = i + 1;
 		if(i % 2 == 0) {
 			yield;
@@ -19,6 +20,7 @@ thread2() {
 	Int i = start;
 	while(i <= stop) {
 		putint(i);
+		putchar(10);
 		i = i + 1;
 		if(i % 3 == 0) {
 			yield;
