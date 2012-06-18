@@ -1,7 +1,7 @@
 #ifndef IR_H
 #define IR_H
 
-typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL, TUPLE, GINIT, EXTFUNC } irtype;
+typedef enum { CONST, LOCAL, FARG, GLOBAL, BINOP, CALL, ESEQ, MOVE, EXP, JUMP, CJUMP, SEQ, LABEL, FUNC, RET, TRAP, HALT, LISTEL, TUPLE, GINIT, EXTFUNC, SPAWN, YIELD } irtype;
 typedef enum { PLUS, MINUS, MUL, DIV, MOD, AND, OR, LSHIFT, RSHIFT, XOR, EQ, NE, LT, GT, LE, GE } irop;
 typedef enum { C_VOID, C_UNION, C_RAW, C_INT, C_BOOL, C_LIST, C_TUPLE } splctype;
 
@@ -85,6 +85,7 @@ struct irunit {
 				int nargs;
 				struct splctypelist *args;
 			} extfunc;
+			irfunc threadfunc;
 		};
 	};
 };

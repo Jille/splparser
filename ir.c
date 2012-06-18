@@ -223,6 +223,12 @@ show_ir_tree(struct irunit *ir, int indent) {
 	case GINIT:
 		printf("GINIT(%d)", ir->nglobals);
 		break;
+	case SPAWN:
+		printf("SPAWN(%d)", ir->threadfunc);
+		break;
+	case YIELD:
+		printf("YIELD");
+		break;
 	default:
 		assert(0 && "Unknown irtype");
 	}
@@ -417,5 +423,16 @@ irstm *mkirginit(int globals) {
 	irexp *ret = malloc(sizeof(struct irunit));
 	ret->type = GINIT;
 	ret->nglobals = globals;
+	return ret;
+}
+irstm *mkirspawn(irfunc func) {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = SPAWN;
+	ret->threadfunc = func;
+	return ret;
+}
+irstm *mkiryield() {
+	irexp *ret = malloc(sizeof(struct irunit));
+	ret->type = YIELD;
 	return ret;
 }
