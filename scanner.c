@@ -164,6 +164,10 @@ done:
 		st->active->type = T_ELSE;
 	} else if(strcmp(buf, "return") == 0) {
 		st->active->type = T_RETURN;
+	} else if(strcmp(buf, "spawn") == 0) {
+		st->active->type = T_SPAWN;
+	} else if(strcmp(buf, "yield") == 0) {
+		st->active->type = T_YIELD;
 	} else {
 		st->active->type = T_WORD;
 		st->active->value.sval = strdup(buf);

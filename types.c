@@ -639,6 +639,33 @@ DESCEND_FUNC(funcall) {
 	return mkircall(f->func, args);
 }
 
+DESCEND_FUNC(spawn) {
+	assert(arg != NULL);
+
+	assert(t->fst_child->type == 0 && t->fst_child->token->type == T_SPAWN);
+	assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == T_WORD);
+	assert(t->fst_child->next->next->type == 0 && t->fst_child->next->next->token->type == ';');
+	assert(t->fst_child->next->next->next == NULL);
+
+	struct tc_func *f;
+	f = lookup_function(tg, t->fst_child->next->token->value.sval);
+	struct type rtype;
+	rtype.type = T_VOID;
+	unify_types(tg, &rtype, f->returntype, NULL);
+
+	return mkirspawn(f->func);
+}
+
+DESCEND_FUNC(yield) {
+	assert(arg != NULL);
+
+	assert(t->fst_child->type == 0 && t->fst_child->token->type == T_YIELD);
+	assert(t->fst_child->next->type == 0 && t->fst_child->next->token->type == ';');
+	assert(t->fst_child->next->next == NULL);
+
+	return mkiryield();
+}
+
 DESCEND_FUNC(stmt) {
 	if(t->fst_child->type == 1 && t->fst_child->rule == tg->funcall_rule) {
 		return mkirexp(tc_descend_simple(tg, t, NULL));
@@ -860,6 +887,8 @@ typechecker(synt_tree *t, grammar *gram) {
 	SET_RULE_HANDLER(While, while);
 	SET_RULE_HANDLER(Assignment, assignment);
 	SET_RULE_HANDLER(FunCall, funcall);
+	SET_RULE_HANDLER(Spawn, spawn);
+	SET_RULE_HANDLER(Yield, yield);
 	SET_RULE_HANDLER(Return, return);
 	SET_RULE_HANDLER(Stmt, stmt);
 	SET_RULE_HANDLER(Stmt+, simple_seq);

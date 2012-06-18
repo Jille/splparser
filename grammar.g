@@ -9,12 +9,14 @@ ExtFunDecl := RetType T_WORD '(' FArgs ')' T_EXTERN T_WORD ';' | RetType T_WORD 
 RetType := Type | T_VOID
 Type := T_INT | T_BOOL | '(' Type ',' Type ')' | '[' Type ']' | T_WORD
 FArgs := Type T_WORD | Type T_WORD ',' FArgs
-Stmt := '{' '}' | '{' Stmt+ '}' | If | While | Assignment | FunCall ';' | Return
+Stmt := '{' '}' | '{' Stmt+ '}' | If | While | Assignment | FunCall ';' | Return | Spawn | Yield
 If := T_IF '(' Exp ')' Stmt T_ELSE Stmt | T_IF '(' Exp ')' Stmt
 While := T_WHILE '(' Exp ')' Stmt
 Return := T_RETURN Exp ';' | T_RETURN ';'
 Assignment := T_WORD '=' Exp ';'
 FunCall := T_WORD '(' ')' | T_WORD '(' ActArgs ')'
+Spawn := T_SPAWN T_WORD ';'
+Yield := T_YIELD ';'
 ActArgs := Exp | Exp ',' ActArgs
 CompOp := T_EQ | '<' | '>' | T_LTE | T_GTE | T_NE | T_AND | T_OR
 AddOp := '+' | '-'
