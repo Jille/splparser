@@ -1,0 +1,35 @@
+Void
+tread1() {
+	Int start = 5;
+	Int stop = 10;
+	Int i = start;
+	while(i <= stop) {
+		putint(i);
+		i = i + 1;
+		if(i % 2 == 0) {
+			yield;
+		}
+	}
+}
+
+Void
+tread2() {
+	Int start = 20;
+	Int stop = 30;
+	Int i = start;
+	while(i <= stop) {
+		putint(i);
+		i = i + 1;
+		if(i % 3 == 0) {
+			yield;
+		}
+	}
+}
+
+Int
+main() {
+	spawn tread1;
+	spawn tread2;
+	spawn tread1;
+	return 1;
+}
