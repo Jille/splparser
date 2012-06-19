@@ -24,10 +24,15 @@ struct ssmfuncmapping {
 	struct ssmfuncmapping *next;
 };
 
+#define RESERVED_GLOBALS 1
+
 static struct ssmlabelmapping *ssmlabels = NULL;
 static struct ssmfuncmapping *ssmfuncs = NULL;
-static ssmlabel ssmlabelptr = 0;
+static ssmlabel ssmlabelptr = 2;
 static int args_for_current_function = -1;
+
+static ssmlabel yieldlabel = 0;
+static ssmlabel softexitlabel = 1;
 
 static struct ssmline *
 alloc_ssmline(ssminstr instr) {
@@ -246,7 +251,7 @@ ir_exp_to_ssm(struct irunit *ir, ssmregister reg) {
 		struct ssmline *ret = alloc_ssmline(SLDR);
 		ret->arg1.regval = R5;
 		ret->next = alloc_ssmline(SLDA);
-		ret->next->arg1.intval = ir->global;
+		ret->next->arg1.intval = ir->global + RESERVED_GLOBALS;
 		ret->next->next = ssm_move_data(reg, STACK);
 		asprintf(&ret->comment, "Fetch global %d", ir->global);
 		return ret;
@@ -380,7 +385,7 @@ ir_to_ssm(struct irunit *ir) {
 				ret = alloc_ssmline(SLDR);
 				ret->arg1.regval = R5;
 				ret->next = alloc_ssmline(SSTA);
-				ret->next->arg1.intval = ir->move.dst->global;
+				ret->next->arg1.intval = ir->move.dst->global + RESERVED_GLOBALS;
 				asprintf(&ret->comment, "Store in global %d", ir->move.dst->global);
 				ssm_iterate_last(exp)->next = ret;
 				break;
@@ -469,8 +474,6 @@ ir_to_ssm(struct irunit *ir) {
 		res->arg1.intval = ir->trap.syscall;
 		ssm_iterate_last(exp)->next = res;
 		return exp;
-	case SOFTHALT:
-		// XXX
 	case HALT:
 		return alloc_ssmline(SHALT);
 	case LABEL: ;
@@ -488,7 +491,7 @@ ir_to_ssm(struct irunit *ir) {
 		lines[2] = alloc_ssmline(SLDR);
 		lines[2]->arg1.regval = HP;
 		lines[3] = alloc_ssmline(SLDC);
-		lines[3]->arg1.intval = ir->nglobals;
+		lines[3]->arg1.intval = ir->nglobals + RESERVED_GLOBALS;
 		lines[4] = alloc_ssmline(SADD);
 		lines[5] = alloc_ssmline(SSTR);
 		lines[5]->arg1.regval = HP;
@@ -499,6 +502,79 @@ ir_to_ssm(struct irunit *ir) {
 		efunc->label = get_ssmlabel_from_irfunc(ir->extfunc.funcid);
 		efunc->comment = "External functions are not supported in SSM";
 		return efunc;
+	case SPAWN: {
+		struct ssmline *lines[21];
+		int i = 0;
+		lines[i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = R5;
+		lines[i]->comment = "Load global 0";
+		lines[++i] = alloc_ssmline(SLDA);
+		lines[i]->arg1.intval = 0;
+		lines[++i] = alloc_ssmline(SLDC);
+		lines[i]->arg1.intval = 0x256;
+		lines[i]->comment = "Tel er $veel bij op";
+		lines[++i] = alloc_ssmline(SADD);
+		lines[++i] = alloc_ssmline(SSTR);
+		lines[i]->arg1.regval = R7; // Kan ook met RR gedaan worden als R7 nodig is
+		lines[i]->comment = "R7 is de top van nieuwe stack";
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = R7;
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = R5;
+		lines[++i] = alloc_ssmline(SSTA);
+		lines[i]->arg1.intval = 0;
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = R7;
+		lines[i]->comment = "We slaan de laatst gemaakte stack weer op in global 0";
+		lines[++i] = alloc_ssmline(SSWPRR);
+		lines[i]->arg1.regval = SP;
+		lines[i]->arg2.regval = R7;
+		lines[i]->comment = "Schakel over op de nieuwe stack";
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = R6;
+		lines[i]->comment = "Push een pointer naar onze thread-administratie";
+		lines[++i] = alloc_ssmline(SLDA);
+		lines[i]->arg1.intval = 1;
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = SP;
+		lines[i]->comment = "Push onze SP in onze thread-administratie";
+		lines[++i] = alloc_ssmline(SLDC);
+		lines[i]->arg1.intval = 4;
+		lines[++i] = alloc_ssmline(SADD);
+		lines[++i] = alloc_ssmline(SLDC_LABEL);
+		lines[i]->arg1.labelval = softexitlabel;
+		lines[i]->comment = "Een last-resort retval als de threadfunctie returnt";
+		lines[++i] = alloc_ssmline(SLDC_LABEL);
+		lines[i]->arg1.labelval = get_ssmlabel_from_irfunc(ir->threadfunc);
+		lines[i]->comment = "De threadfunctie";
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->comment = "Sla de SP op als MP";
+		lines[i]->arg1.regval = SP;
+
+		lines[++i] = alloc_ssmline(SLDRR);
+		lines[i]->arg1.regval = SP;
+		lines[i]->arg2.regval = R7;
+		lines[++i] = alloc_ssmline(SLDR);
+		lines[i]->arg1.regval = R6;
+		lines[++i] = alloc_ssmline(SSTA);
+		lines[i]->arg1.intval = 1;
+		lines[i]->comment = "M[R6+1] = pop";
+
+		lines[++i] = NULL;
+
+		assert(sizeof(lines) / sizeof(struct ssmline *) == i);
+		return chain_ssmlines(lines);
+	}
+	case SOFTHALT: {
+		struct ssmline *bsr = alloc_ssmline(SBSR);
+		bsr->arg1.labelval = softexitlabel;
+		return bsr;
+	}
+	case YIELD: {
+		struct ssmline *bsr = alloc_ssmline(SBSR);
+		bsr->arg1.labelval = yieldlabel;
+		return bsr;
+	}
 	default:
 		printf("Didn't expect IR type %d here\n", ir->type);
 		assert(0 && "Didn't expect that IR type here");
@@ -507,6 +583,9 @@ ir_to_ssm(struct irunit *ir) {
 
 void
 write_ssm(struct ssmline *ssm, FILE *fh) {
+	fprintf(fh, "         LDRR R6 SP ; Zet een pointer naar onze thread-administratie in R6\n");
+	fprintf(fh, "         LDR SP ; Push een pointer naar onze thread-administratie\n");
+	fprintf(fh, "         LDC 0 ; Push ruimte voor onze eigen stackpointer\n");
 	while(ssm != NULL) {
 		if(ssm->label == 0) {
 			fprintf(fh, "         ");
@@ -553,6 +632,7 @@ write_ssm(struct ssmline *ssm, FILE *fh) {
 		INSTR_LABEL(BSR);
 		INSTR_LABEL(BRF);
 		INSTR_LABEL(BRT);
+		case SLDC_LABEL: fprintf(fh, "LDC lbl%04d", ssm->arg1.labelval); break;
 
 		// register parameter
 #define INSTR_REG(instr)	case S ## instr: fprintf(fh, #instr " %s", ssm_register_to_string(ssm->arg1.regval)); break
@@ -581,6 +661,40 @@ write_ssm(struct ssmline *ssm, FILE *fh) {
 		ssm = ssm->next;
 	}
 	ssm_builtin_functions(fh);
+	fprintf(fh, "lbl%04d: LDR MP ; yield\n", yieldlabel);
+	fprintf(fh, "         LDR SP\n");
+	fprintf(fh, "         LDR R6\n");
+	fprintf(fh, "         STA 2 ; M[R6+1] = SP\n");
+	fprintf(fh, "runthr:  LDR R6 ; run thread\n");
+	fprintf(fh, "         LDA 1 ; push M[R6+1]\n");
+	fprintf(fh, "         STR R6 ; dit wijst naar de administratie van de nieuwe active thread\n");
+	fprintf(fh, "         LDR R6\n");
+	fprintf(fh, "         LDA 2 ; push M[R6+1] (== SP)\n");
+	fprintf(fh, "         STR SP\n");
+	fprintf(fh, "         STR MP\n");
+	fprintf(fh, "         RET\n");
+
+	fprintf(fh, "lbl%04d: LDR R6 ; soft exit\n", softexitlabel);
+	fprintf(fh, "         LDR R6\n");
+	fprintf(fh, "         LDA 1 ; Derefence R6\n");
+	fprintf(fh, "         EQ ; R6 == R6->next?\n");
+	fprintf(fh, "         BRT halt ; Dan waren wij de laatste thread\n");
+	fprintf(fh, "         LDRR R7 R6\n");
+	fprintf(fh, "         BRA loop\n");
+	fprintf(fh, "skip:    LDR R7 ; Schuif R7 een op\n");
+	fprintf(fh, "         LDA 1\n");
+	fprintf(fh, "         STR R7\n");
+	fprintf(fh, "loop:    LDR R7\n");
+	fprintf(fh, "         LDA 1\n");
+	fprintf(fh, "         LDR R6\n");
+	fprintf(fh, "         EQ ; R7->next == R6?\n");
+	fprintf(fh, "         BRF skip\n");
+	fprintf(fh, "         LDR R6\n");
+	fprintf(fh, "         LDA 1\n");
+	fprintf(fh, "         LDR R7\n");
+	fprintf(fh, "         STA 1 ; R7->next = R6->next\n");
+	fprintf(fh, "         BRA runthr\n");
+	fprintf(fh, "halt:    HALT\n");
 }
 
 void
