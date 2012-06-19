@@ -1,9 +1,11 @@
+Int thread1count = 0;
+Int thread2count = 0;
+
 Void
 thread2() {
 	Int i = 100;
 	while(i > 95) {
-		putint(2);
-		putchar(10);
+		thread2count = thread2count + 1;
 		i = i - 1;
 		yield;
 	}
@@ -13,8 +15,7 @@ Void
 thread1() {
 	Int i = 3;
 	while(i > 0) {
-		putint(1);
-		putchar(10);
+		thread1count = thread1count + 1;
 		i = i - 1;
 		spawn thread2;
 		yield;
