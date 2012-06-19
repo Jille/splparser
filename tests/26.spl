@@ -1,0 +1,25 @@
+Int create = 5;
+
+Void
+make() {
+	Int me = create;
+	Int i = 3;
+
+	create = create - 1;
+	if(create > 0) {
+		spawn make;
+	}
+
+	while(i > 0) {
+		putint(me);
+		putchar(10);
+		i = i - 1;
+		yield;
+	}
+}
+
+Int
+main() {
+	spawn make;
+	return 0;
+}
